@@ -1159,10 +1159,11 @@ function parseC7(data){
     equipos.push({code:codigo,desc:nombre,brand:'—',area,status:estado,obs,fechaMant:String(row[7]||'').trim()});
   }
   if(equipos.length===0){toast('No se encontraron equipos','⚠️');return;}
-  // Reset all previous progress for this lab when loading new Excel
+  // Reset all previous progress — local and in Sheets
   S.confirmed=S.confirmed.filter(c=>c.labId!==lab.id);
   S.tickets=S.tickets.filter(t=>t.labId!==lab.id);
   lab.openTickets=0;lab.pendingTickets=0;lab.resolvedTickets=0;
+  api('deleteByLab',{labId:lab.id});
   lab.db=equipos;
   lab.totalEquip=equipos.length;
   lab.verified=0;
@@ -1205,10 +1206,11 @@ function applyLabMapping(){
   const statusCol=document.getElementById('lmap_status')?.value;
   if(!codeCol||!descCol){toast('Código y Descripción son obligatorios','⚠️');return;}
   const lab=S.labs.find(l=>l.id===S._pendingLabId);
-  // Reset all previous progress
+  // Reset all previous progress — local and in Sheets
   S.confirmed=S.confirmed.filter(c=>c.labId!==lab.id);
   S.tickets=S.tickets.filter(t=>t.labId!==lab.id);
   lab.openTickets=0;lab.pendingTickets=0;lab.resolvedTickets=0;lab.verified=0;
+  api('deleteByLab',{labId:lab.id});
   lab.db=S.rawRows.filter(r=>r[codeCol]).map(r=>({
     code:String(r[codeCol]).trim().toUpperCase(),
     desc:r[descCol]||'',brand:'—',area:'—',
