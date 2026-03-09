@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>C7Lab – UNALM | Facultad de Agronomía</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.20.0/index.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   UNALM — Universidad Nacional Agraria La Molina
+   Basado en portal MSYS SGC
+   ═══════════════════════════════════════════ */
+:root{
+  /* Verdes UNALM (tomados del portal) */
+  --green:   #3D6B4F;   /* verde barra superior                   */
+  --green-dk:#2A4D38;   /* verde muy oscuro: hover, sombras       */
+  --green-lt:#EBF2EC;   /* verde claro: fondos de tarjetas        */
+  --green-md:#4E8064;   /* verde medio: acentos secundarios       */
+
+  /* Dorado/crema UNALM */
+  --gold:    #C9A84C;   /* dorado del escudo / acentos            */
+  --gold-lt: #FBF5E6;   /* crema claro: fondos cálidos            */
+  --cream:   #F5EED8;   /* crema del edificio                     */
+
+  /* Estados */
+  --red:     #C0392B;   /* alertas / danger                       */
+  --red-lt:  #FDEAEA;
+  --amber:   #D4860A;   /* en revisión                            */
+  --amber-lt:#FEF5E7;
+  --blue:    #2C72B0;   /* links y acciones secundarias           */
+  --blue-lt: #EBF3FC;
+
+  /* Neutros */
+  --ink:     #1A1A1A;   /* texto principal                        */
+  --white:   #FEFEFE;
+  --fog:     #F2F5F1;   /* fondo con tinte verde muy suave        */
+  --border:  #C8D8CC;
+  --gray:    #667A6E;
+
+  --shadow:  0 2px 12px rgba(42,77,56,.10);
+  --shadow-lg:0 8px 32px rgba(42,77,56,.18);
+  --r:12px; --r-sm:8px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{font-family:'DM Sans',sans-serif;background:var(--fog);color:var(--ink);}
+
+/* ── NAV: azul institucional con franja amarilla inferior ── */
+.nav{
+  background:var(--green-dk);
+  height:56px;padding:0 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 3px 0 var(--yellow), 0 4px 20px rgba(0,0,0,.2);
+}
+.nav-brand{
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+  color:var(--white);letter-spacing:.2px;white-space:nowrap;
+  display:flex;align-items:center;gap:10px;text-transform:uppercase;
+}
+.brand-star{font-size:22px;color:var(--gold);line-height:1;}
+.nav-brand em{color:var(--gold);font-style:normal;font-weight:800;}
+.nav-pills{display:flex;gap:2px;overflow-x:auto;}
+.np{
+  font-size:11px;font-weight:600;padding:6px 11px;border-radius:20px;border:none;
+  background:transparent;color:rgba(255,255,255,.6);cursor:pointer;
+  transition:all .18s;white-space:nowrap;
+}
+.np:hover{color:#fff;background:rgba(255,255,255,.12);}
+.np.on{color:var(--green-dk);background:var(--gold);}
+.nb{background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:20px;margin-left:3px;}
+.role-sw{display:flex;gap:5px;flex-shrink:0;}
+.rb{
+  font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;
+  border:1.5px solid rgba(255,255,255,.25);background:transparent;
+  color:rgba(255,255,255,.65);cursor:pointer;transition:all .18s;
+}
+.rb.on{background:var(--gold);border-color:var(--gold);color:var(--green-dk);}
+
+/* ── MOBILE TABS ── */
+.mtabs{
+  display:none;background:var(--white);
+  border-bottom:3px solid var(--green-dk);
+  padding:6px 10px;gap:5px;overflow-x:auto;
+  position:sticky;top:56px;z-index:190;
+}
+.mt{font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px;border:none;background:var(--fog);color:var(--gray);cursor:pointer;white-space:nowrap;}
+.mt.on{background:var(--green);color:#fff;}
+@media(max-width:700px){.nav-pills{display:none;}.mtabs{display:flex;}}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1100px;margin:0 auto;padding:20px 14px;}
+.page{display:none;}.page.on{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:20px;margin-bottom:16px;}
+.card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+.card-sub{font-size:13px;color:var(--gray);margin-bottom:16px;}
+
+/* ── STAT CARDS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-bottom:16px;}
+.sc{background:var(--white);border-radius:var(--r);padding:13px 15px;box-shadow:var(--shadow);border-left:4px solid var(--border);}
+.sc.g{border-color:var(--green);}
+.sc.r{border-color:var(--red);}
+.sc.a{border-color:var(--amber);}
+.sc.b{border-color:var(--blue);}
+.sc.y{border-color:var(--yellow-dk);}
+.sn{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;}
+.sc.g .sn{color:var(--green);}
+.sc.r .sn{color:var(--red);}
+.sc.a .sn{color:var(--amber);}
+.sc.b .sn{color:var(--blue);}
+.sc.y .sn{color:var(--yellow-dk);}
+.sl{font-size:10px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.bg-ok{background:var(--green-lt);color:var(--green);}
+.bg-warn{background:var(--red-lt);color:var(--red);}
+.bg-amb{background:var(--amber-lt);color:var(--amber);}
+.bg-blue{background:var(--blue-lt);color:var(--blue-dk);}
+.bg-gray{background:var(--fog);color:var(--gray);}
+.bg-yellow{background:var(--yellow);color:var(--yellow-dk);}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:5px;}
+.btn-ok{background:var(--green);color:#fff;}.btn-ok:hover{background:#326b47;}
+.btn-danger{background:var(--red);color:#fff;}.btn-danger:hover{background:#c01f24;}
+.btn-blue{background:var(--blue);color:#fff;}.btn-blue:hover{background:var(--blue-dk);}
+.btn-ghost{background:var(--fog);color:var(--ink);border:1.5px solid var(--border);}.btn-ghost:hover{background:var(--border);}
+.btn-amber{background:var(--amber);color:#fff;}.btn-amber:hover{background:#b06e08;}
+.btn-yellow{background:var(--yellow);color:var(--yellow-dk);font-weight:700;}.btn-yellow:hover{background:#ffe800;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── LAB CARDS ── */
+.lab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
+.lab-card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:all .2s;border:2px solid transparent;}
+.lab-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);}
+.lab-card.sel{border-color:var(--blue);}
+.lch{padding:13px 15px;display:flex;align-items:center;gap:11px;}
+.lca{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.lcn{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;line-height:1.3;}
+.lcs{font-size:11px;color:var(--gray);margin-top:1px;}
+.lcf{padding:9px 15px;background:var(--fog);display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--border);}
+.lcs2{font-size:11px;color:var(--gray);display:flex;align-items:center;gap:4px;}
+.pmini{flex:1;background:var(--border);border-radius:20px;height:5px;overflow:hidden;}
+.pminibar{height:100%;border-radius:20px;transition:width .4s;}
+
+/* ── SCAN HERO: gradiente azul institucional ── */
+.scan-hero{
+  background:linear-gradient(135deg, var(--green-dk) 0%, var(--green-md) 100%);
+  border-radius:var(--r);padding:22px 18px;text-align:center;
+  margin-bottom:16px;position:relative;overflow:hidden;
+  border-bottom:4px solid var(--gold);
+}
+.scan-hero::after{content:'';position:absolute;inset:0;opacity:.04;background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(255,255,255,1) 6px,rgba(255,255,255,1) 7px);}
+.sh-lab{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;}
+.sh-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;}
+.sh-sub{font-size:12px;color:rgba(255,255,255,.6);margin-bottom:18px;}
+.scan-controls{display:flex;gap:8px;max-width:420px;margin:0 auto;position:relative;z-index:1;}
+.scan-field{flex:1;padding:11px 14px;border-radius:50px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border .2s;}
+.scan-field::placeholder{color:rgba(255,255,255,.4);}
+.scan-field:focus{border-color:var(--gold);}
+.btn-cam{background:var(--gold);color:var(--green-dk);font-size:17px;width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.btn-cam:hover{background:#fff;}
+.btn-verify{background:var(--gold);color:var(--green-dk);font-family:'Syne',sans-serif;font-weight:800;font-size:12px;padding:11px 18px;border-radius:50px;border:none;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.btn-verify:hover{background:#fff;}
+
+/* ── CAMERA ── */
+.cam-panel{background:#000;border-radius:var(--r);overflow:hidden;margin-bottom:16px;display:none;position:relative;}
+.cam-panel.open{display:block;}
+#camVideo{width:100%;display:block;max-height:250px;object-fit:cover;}
+.cam-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.cam-frame{width:210px;height:85px;border:2.5px solid var(--gold);border-radius:9px;position:relative;box-shadow:0 0 0 2000px rgba(0,0,0,.5);}
+.cam-line{position:absolute;left:4px;right:4px;top:50%;height:2px;background:var(--gold);animation:scan 1.8s ease-in-out infinite;box-shadow:0 0 10px var(--gold);}
+@keyframes scan{0%,100%{top:15%;}50%{top:85%;}}
+.cam-close{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.cam-status{position:absolute;bottom:8px;left:0;right:0;text-align:center;color:var(--gold);font-size:12px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.9);}
+
+/* ── RESULTS ── */
+.result{border-radius:var(--r);padding:15px 17px;margin-bottom:16px;display:none;animation:pop .25s ease;border:2px solid transparent;}
+.result.show{display:block;}
+@keyframes pop{from{opacity:0;transform:scale(.97);}to{opacity:1;transform:scale(1);}}
+.result.ok{background:var(--green-lt);border-color:var(--green);}
+.result.warn{background:var(--red-lt);border-color:var(--red);}
+.result.miss{background:var(--terra-lt);border-color:var(--terra);}
+.rh{display:flex;align-items:flex-start;gap:10px;margin-bottom:11px;}
+.ri{font-size:22px;}
+.rt{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.rt.ok{color:var(--green);}.rt.warn{color:var(--red);}.rt.miss{color:var(--terra);}
+.rsub{font-size:11px;margin-top:1px;}
+.rsub.ok{color:var(--green);}.rsub.warn{color:var(--red);}.rsub.miss{color:var(--terra);}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px;}
+@media(max-width:420px){.rgrid{grid-template-columns:1fr;}}
+.rf{background:var(--white);border-radius:var(--r-sm);padding:8px 11px;border:1px solid var(--border);}
+.rf label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--gray);display:block;margin-bottom:2px;}
+.rf span{font-size:13px;font-weight:500;}
+
+/* ── PROGRESS BAR: azul → verde institucional ── */
+.prog-wrap{background:var(--fog);border-radius:20px;height:8px;overflow:hidden;border:1px solid var(--border);}
+.prog-bar{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--green-md),var(--gold));transition:width .5s ease;}
+
+/* ── TICKETS ── */
+.tkt{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden;border-left:4px solid var(--red);}
+.tkt.resolved{border-color:var(--green);}
+.tkt.pending{border-color:var(--amber);}
+.tkt-h{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px;}
+.tkt-id{font-size:10px;font-weight:700;color:var(--gray);}
+.tkt-code{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;}
+.tkt-desc{font-size:12px;color:var(--gray);margin-top:1px;}
+.tkt-b{padding:0 14px 13px;display:none;border-top:1px solid var(--border);}
+.tkt-b.open{display:block;}
+.ts-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray);margin:10px 0 5px;}
+.diff-t{width:100%;border-collapse:collapse;font-size:12px;}
+.diff-t th{background:var(--fog);padding:5px 9px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;}
+.diff-t td{padding:6px 9px;border-top:1px solid var(--border);}
+.d-old{color:var(--red);text-decoration:line-through;}
+.d-new{color:var(--green);font-weight:600;}
+.timeline{list-style:none;border-left:2px solid var(--border);margin-left:6px;}
+.tl{display:flex;gap:9px;padding:5px 0 5px 13px;font-size:12px;position:relative;}
+.tl::before{content:'';width:8px;height:8px;background:var(--green-md);border-radius:50%;position:absolute;left:-5px;top:8px;}
+.tl.res::before{background:var(--green);}
+.tl-t{color:var(--gray);min-width:90px;}
+.resolve-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r-sm);}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{background:var(--green-dk);color:#fff;padding:9px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;}
+.tbl th:hover{background:var(--green);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:hover td{background:var(--green-lt);}
+
+/* ── FILTERS ── */
+.fbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
+.fi{padding:7px 11px;border-radius:8px;border:1.5px solid var(--border);font-family:'DM Sans',sans-serif;font-size:13px;background:var(--white);color:var(--ink);outline:none;transition:border .18s;}
+.fi:focus{border-color:var(--green);}
+
+/* ── C7 FORMATO ── */
+.c7-preview{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:22px;}
+.c7-hdr{text-align:center;margin-bottom:16px;padding-bottom:13px;border-bottom:3px solid var(--green);}
+.c7-hdr .c7-stripe{height:5px;background:linear-gradient(90deg,var(--green-dk),var(--green-md),var(--gold));border-radius:3px;margin-bottom:12px;}
+.c7-hdr h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--ink);}
+.c7-hdr p{font-size:11px;color:var(--gray);margin-top:3px;}
+.c7-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+@media(max-width:480px){.c7-meta{grid-template-columns:1fr;}}
+.c7-mi{background:var(--fog);border-radius:var(--r-sm);padding:8px 11px;}
+.c7-mi label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--green-dk);display:block;margin-bottom:1px;}
+.c7-mi span{font-size:13px;font-weight:500;}
+.c7-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px;}
+.c7-tbl th{background:var(--green-dk);color:#fff;padding:6px 8px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;}
+.c7-tbl td{padding:6px 8px;border:1px solid var(--border);}
+.c7-tbl tr:nth-child(even) td{background:var(--green-lt);}
+.c7-sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+@media(max-width:480px){.c7-sigs{grid-template-columns:1fr;}}
+.c7-sig{border-top:3px solid var(--green);}padding-top:6px;text-align:center;font-size:11px;}
+.c7-sig strong{display:block;font-weight:700;font-size:12px;margin-top:24px;color:var(--green-dk);}
+
+/* ── MODALS ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(30,20,20,.6);z-index:300;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(4px);}
+.modal-bg.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--r);max-width:480px;width:100%;padding:22px;box-shadow:var(--shadow-lg);animation:mIn .22s ease;max-height:90vh;overflow-y:auto;border-top:4px solid var(--green);}
+@keyframes mIn{from{opacity:0;transform:scale(.94);}to{opacity:1;transform:scale(1);}}
+.modal h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:5px;color:var(--green-dk);}
+.modal p{font-size:13px;color:var(--gray);margin-bottom:14px;line-height:1.6;}
+.fg{margin-bottom:10px;}
+.fl{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--gray);margin-bottom:4px;}
+.finput,.fselect,.ftextarea{width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border .18s;}
+.finput:focus,.fselect:focus,.ftextarea:focus{border-color:var(--green);}
+.ftextarea{resize:vertical;min-height:65px;}
+
+/* ── UPLOAD ── */
+.upload-zone{border:2.5px dashed var(--border);border-radius:var(--r);padding:24px;cursor:pointer;transition:all .2s;background:var(--white);position:relative;text-align:center;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--green);background:var(--green-lt);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+
+/* ── DASHBOARD ── */
+.dash-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:680px){.dash-2{grid-template-columns:1fr;}}
+.chart-card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;}
+.chart-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;color:var(--green-dk);}
+.chart-sub{font-size:11px;color:var(--gray);margin-bottom:12px;}
+.chart-wrap{position:relative;height:210px;}
+.chart-wrap-lg{position:relative;height:240px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:16px;right:16px;z-index:400;background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);display:none;align-items:center;gap:8px;max-width:300px;border-left:4px solid var(--gold);}
+.toast.show{display:flex;animation:tIn .25s ease;}
+@keyframes tIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.empty{text-align:center;padding:36px 14px;color:var(--gray);}
+.empty-icon{font-size:40px;margin-bottom:8px;opacity:.35;}
+.blocked{background:var(--white);border-radius:var(--r);padding:28px;text-align:center;border:2px dashed var(--border);}
+
+/* ── ACCORDION AREAS ── */
+.lab-areas{display:none;border-top:1px solid var(--border);background:var(--fog);}
+.lab-areas.open{display:block;}
+.area-row{display:flex;align-items:center;gap:10px;padding:9px 15px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.area-row:last-child{border-bottom:none;}
+.area-row:hover{background:var(--green-lt);}
+.area-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.area-dot.ok{background:var(--green);}
+.area-dot.warn{background:var(--red);}
+.area-dot.pend{background:var(--amber);}
+.area-name{font-size:12px;font-weight:600;flex:1;}
+.area-meta{font-size:11px;color:var(--gray);}
+.area-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.lab-toggle{font-size:11px;color:var(--gray);display:flex;align-items:center;gap:4px;cursor:pointer;padding:7px 15px;background:var(--fog);border-top:1px solid var(--border);transition:background .15s;}
+.lab-toggle:hover{background:var(--green-lt);}
+.lab-toggle .chev{transition:transform .2s;display:inline-block;}
+.lab-toggle.open .chev{transform:rotate(180deg);}
+.lab-card.no-areas .lab-toggle{display:none;}
+
+@media print{body *{visibility:hidden;}.c7-preview,.c7-preview *{visibility:visible;}.c7-preview{position:fixed;inset:0;padding:18px;}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="brand-star">✸</span>
+    <span>C7Lab &nbsp;<em>UNALM</em></span>
+  </div>
+  <div class="nav-pills">
+    <button class="np on"  onclick="goPage('labs')">🏫 Laboratorios</button>
+    <button class="np"     onclick="goPage('scan')">📷 Escanear</button>
+    <button class="np"     onclick="goPage('tickets')">🎫 Tickets <span class="nb" id="nb">0</span></button>
+    <button class="np"     onclick="goPage('inventory')">📋 Inventario</button>
+    <button class="np"     onclick="goPage('c7')">📄 C7</button>
+    <button class="np"     onclick="goPage('dashboard')">📊 Dashboard</button>
+  </div>
+  <div class="role-sw">
+    <button class="rb on" id="rLab" onclick="setRole('lab')">Jefe Lab</button>
+    <button class="rb"    id="rPat" onclick="setRole('patrimonio')">Patrimonio</button>
+  </div>
+</nav>
+<div class="mtabs">
+  <button class="mt on"  onclick="goPage('labs')">🏫 Labs</button>
+  <button class="mt"     onclick="goPage('scan')">📷 Scan</button>
+  <button class="mt"     onclick="goPage('tickets')">🎫 Tickets</button>
+  <button class="mt"     onclick="goPage('inventory')">📋 Lista</button>
+  <button class="mt"     onclick="goPage('c7')">📄 C7</button>
+  <button class="mt"     onclick="goPage('dashboard')">📊 Dashboard</button>
+</div>
+
+<div class="wrap">
+
+<!-- ══════════ LABS PAGE ══════════ -->
+<div class="page on" id="page-labs">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Facultad de Agronomía</div>
+      <div style="font-size:13px;color:var(--gray)" id="labsSubtitle">37 laboratorios registrados</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="openAddLabModal()">+ Agregar laboratorio</button>
+      <select class="fi" id="labPeriodFilter" onchange="renderLabs()">
+        <option value="Q1-2025">Q1 2025 (Ene–Mar)</option>
+        <option value="Q2-2025">Q2 2025 (Abr–Jun)</option>
+        <option value="Q3-2025">Q3 2025 (Jul–Sep)</option>
+        <option value="Q4-2025" selected>Q4 2025 (Oct–Dic)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="stats" id="labStats"></div>
+
+  <div class="fbar">
+    <input class="fi" id="labSearch" placeholder="🔍 Buscar laboratorio…" oninput="renderLabs()" style="flex:1;min-width:160px">
+    <select class="fi" id="labStatusFilter" onchange="renderLabs()">
+      <option value="all">Todos los estados</option>
+      <option value="completo">Completo</option>
+      <option value="en_proceso">En proceso</option>
+      <option value="pendiente">Sin iniciar</option>
+    </select>
+  </div>
+
+  <div class="lab-grid" id="labGrid"></div>
+</div>
+
+<!-- ══════════ SCAN PAGE ══════════ -->
+<div class="page" id="page-scan">
+  <!-- Lab selector banner -->
+  <div id="noLabWarning" class="card" style="background:#FFF7ED;border:1.5px solid var(--amber);padding:14px 18px;display:none;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">⚠️</span>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--amber)">Selecciona un laboratorio primero</div>
+        <div style="font-size:12px;color:var(--amber)">Ve a Laboratorios, elige uno y luego pulsa "Iniciar verificación"</div>
+      </div>
+      <button class="btn btn-amber" style="margin-left:auto" onclick="goPage('labs')">Ir a Labs →</button>
+    </div>
+  </div>
+
+  <div class="scan-hero">
+    <div class="sh-lab" id="scanLabName">— Selecciona un laboratorio —</div>
+    <div class="sh-title">Verificación de Equipos</div>
+    <div class="sh-sub">Escanea el código de barras o ingrésalo manualmente</div>
+    <div class="scan-controls">
+      <input class="scan-field" id="scanInput" type="text" placeholder="Código de inventario…"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter')doScan()">
+      <button class="btn-cam" id="camBtn" onclick="toggleCam()" title="Escanear con cámara">📷</button>
+      <button class="btn-verify" onclick="doScan()">Verificar</button>
+    </div>
+  </div>
+
+  <div class="cam-panel" id="camPanel">
+    <video id="camVideo" playsinline autoplay muted></video>
+    <div class="cam-overlay">
+      <div style="font-size:11px;color:rgba(255,255,255,.85);margin-bottom:9px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.9)">Centra el código dentro del recuadro</div>
+      <div class="cam-frame"><div class="cam-line"></div></div>
+      <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:9px;">Code 128 · Code 39 · EAN · UPC</div>
+    </div>
+    <div class="cam-status" id="camStatus">Iniciando cámara…</div>
+    <button class="cam-close" onclick="stopCam()">✕</button>
+  </div>
+
+  <div class="result ok"   id="rOk"></div>
+  <div class="result warn" id="rWarn"></div>
+  <div class="result miss" id="rMiss"></div>
+
+  <div class="card">
+    <div class="card-title">Progreso — <span id="progLabName" style="color:var(--blue)">ningún laboratorio seleccionado</span></div>
+    <div class="card-sub" id="progLabel">Selecciona un laboratorio para comenzar</div>
+    <div class="prog-wrap"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+    <div class="stats" style="margin-top:12px;margin-bottom:0">
+      <div class="sc g"><div class="sn" id="sOk">0</div><div class="sl">Conformes</div></div>
+      <div class="sc r"><div class="sn" id="sWarn">0</div><div class="sl">Con ticket</div></div>
+      <div class="sc a"><div class="sn" id="sPend">0</div><div class="sl">Pendientes</div></div>
+      <div class="sc b"><div class="sn" id="sTotal">0</div><div class="sl">Total</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TICKETS PAGE ══════════ -->
+<div class="page" id="page-tickets">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Tickets de Observación</div>
+      <div style="font-size:13px;color:var(--gray)">Incidencias de todos los laboratorios</div>
+    </div>
+  </div>
+  <div class="stats" id="tktStats"></div>
+  <div class="fbar">
+    <input class="fi" id="tktSearch" placeholder="🔍 Código, lab, descripción…" oninput="renderTickets()" style="flex:1;min-width:150px">
+    <select class="fi" id="tktLabFilter" onchange="renderTickets()">
+      <option value="all">Todos los labs</option>
+    </select>
+    <select class="fi" id="tktStatusFilter" onchange="renderTickets()">
+      <option value="all">Todos los estados</option>
+      <option value="open">Abiertos</option>
+      <option value="pending">En revisión</option>
+      <option value="resolved">Resueltos</option>
+    </select>
+  </div>
+  <div id="tktList"></div>
+</div>
+
+<!-- ══════════ INVENTORY PAGE ══════════ -->
+<div class="page" id="page-inventory">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Inventario Verificado</div>
+      <div style="font-size:13px;color:var(--gray)">Equipos confirmados por laboratorio</div>
+    </div>
+    <button class="btn btn-blue" onclick="goPage('c7')">📄 Generar C7</button>
+  </div>
+  <div class="fbar">
+    <input class="fi" id="invSearch" placeholder="🔍 Buscar…" oninput="renderInventory()" style="flex:1;min-width:140px">
+    <select class="fi" id="invLabFilter" onchange="renderInventory()">
+      <option value="all">Todos los labs</option>
+    </select>
+    <select class="fi" id="invStateFilter" onchange="renderInventory()">
+      <option value="all">Todos los estados</option>
+      <option value="ÓPTIMO">Óptimo</option>
+      <option value="EN MANTENIMIENTO">En mantenimiento</option>
+      <option value="DE BAJA">De baja</option>
+    </select>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>#</th><th>Código</th><th>Descripción</th><th>Marca</th><th>Área</th><th>Estado</th><th>Laboratorio</th><th>Hora</th></tr></thead>
+        <tbody id="invBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ C7 PAGE ══════════ -->
+<div class="page" id="page-c7">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Formato C7</div>
+      <div style="font-size:13px;color:var(--gray)" id="c7msg">Selecciona un laboratorio</div>
+    </div>
+    <select class="fi" id="c7LabSelect" onchange="renderC7()">
+      <option value="">— Seleccionar laboratorio —</option>
+    </select>
+  </div>
+  <div id="c7Blocked" class="blocked" style="display:none">
+    <div style="font-size:36px;margin-bottom:10px">🔒</div>
+    <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Tickets pendientes</div>
+    <div style="font-size:13px;color:var(--gray);margin-bottom:14px">Resuelve todas las observaciones de este laboratorio primero</div>
+    <button class="btn btn-danger" onclick="goPage('tickets')">Ver tickets →</button>
+  </div>
+  <div id="c7Content" style="display:none">
+    <div class="card" style="background:#EDFAF3;border:1.5px solid var(--green);padding:12px 16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">✅</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--green)">Lista validada — sin incidencias pendientes</div>
+          <div style="font-size:12px;color:var(--green)">El C7 está listo para exportar y obtener firmas</div>
+        </div>
+      </div>
+    </div>
+    <div class="c7-preview" id="c7Preview">
+      <div class="c7-hdr">
+        <div class="c7-stripe"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--blue);margin-bottom:3px">FORMATO C7</div>
+        <h1>RELACIÓN DE EQUIPOS DE LABORATORIO</h1>
+        <p>Condiciones Básicas de Calidad – Licenciamiento Institucional</p>
+      </div>
+      <div class="c7-meta" id="c7Meta"></div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--gray);margin-bottom:7px">EQUIPOS REGISTRADOS</div>
+      <table class="c7-tbl">
+        <thead><tr><th>N°</th><th>Código Inventario</th><th>Descripción</th><th>Marca</th><th>Área / Ambiente</th><th>Estado</th></tr></thead>
+        <tbody id="c7Body"></tbody>
+      </table>
+      <div style="font-size:11px;color:var(--gray)" id="c7Total"></div>
+      <div class="c7-sigs">
+        <div class="c7-sig"><strong>Jefe de Laboratorio</strong><span>Elaborado por</span></div>
+        <div class="c7-sig"><strong>Director de Facultad</strong><span>Revisado por</span></div>
+        <div class="c7-sig"><strong>Rector</strong><span>Aprobado por</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+      <button class="btn btn-blue" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="btn btn-ghost" onclick="exportCSV()">⬇ Exportar CSV</button>
+    </div>
+  </div>
+  <div id="c7Empty" class="empty" style="display:none">
+    <div class="empty-icon">📋</div><p>Selecciona un laboratorio y completa la verificación</p>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD PAGE ══════════ -->
+<div class="page" id="page-dashboard">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Dashboard — Facultad de Agronomía</div>
+      <div style="font-size:13px;color:var(--gray)">Seguimiento trimestral de verificaciones C7</div>
+    </div>
+    <select class="fi" id="dashPeriod" onchange="renderDashboard()">
+      <option value="all">Todos los períodos</option>
+      <option value="Q1-2025">Q1 2025</option>
+      <option value="Q2-2025">Q2 2025</option>
+      <option value="Q3-2025">Q3 2025</option>
+      <option value="Q4-2025" selected>Q4 2025</option>
+    </select>
+  </div>
+
+  <!-- KPI row -->
+  <div class="stats" id="dashKpis"></div>
+
+  <!-- Charts row 1 -->
+  <div class="dash-2">
+    <div class="chart-card">
+      <div class="chart-title">Estado de tickets (Global)</div>
+      <div class="chart-sub">Distribución actual por estado</div>
+      <div class="chart-wrap"><canvas id="chartDonut"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Incidencias por tipo</div>
+      <div class="chart-sub">Categorías más frecuentes</div>
+      <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Line chart -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">Historial de incidencias por trimestre</div>
+    <div class="chart-sub">Tendencia de tickets creados y resueltos cada 3 meses</div>
+    <div class="chart-wrap-lg"><canvas id="chartLine"></canvas></div>
+  </div>
+
+  <!-- Labs table -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+      <div class="card-title" style="margin-bottom:0">Resumen por laboratorio</div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Laboratorio</th>
+            <th>Equipos</th>
+            <th>Verificados</th>
+            <th>🟢 Conformes</th>
+            <th>🔴 Abiertos</th>
+            <th>🟡 En revisión</th>
+            <th>✅ Resueltos</th>
+            <th>% Avance</th>
+            <th>C7</th>
+          </tr>
+        </thead>
+        <tbody id="dashLabTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ══ MODAL: ADD LAB ══ -->
+<div class="modal-bg" id="mAddLab">
+  <div class="modal">
+    <h3>🏫 Agregar Laboratorio</h3>
+    <p>El laboratorio quedará disponible para verificación y seguimiento.</p>
+    <div class="fg"><label class="fl">Nombre del laboratorio *</label>
+      <input class="finput" id="newLabName" placeholder="Ej: Lab. de Suelos y Aguas"></div>
+    <div class="fg"><label class="fl">Código / Sigla</label>
+      <input class="finput" id="newLabCode" placeholder="Ej: LAB-SA-01"></div>
+    <div class="fg"><label class="fl">Área / Sub-área</label>
+      <input class="finput" id="newLabArea" placeholder="Ej: Área de Análisis de Suelos"></div>
+    <div class="fg"><label class="fl">Responsable</label>
+      <input class="finput" id="newLabResp" placeholder="Nombre del jefe de laboratorio"></div>
+    <div class="fg"><label class="fl">Ícono (emoji)</label>
+      <input class="finput" id="newLabIcon" placeholder="🔬" maxlength="4" style="font-size:20px;"></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="addLab()">✔ Agregar</button>
+      <button class="btn btn-ghost" onclick="closeM('mAddLab')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: LAB DETAIL ══ -->
+<div class="modal-bg" id="mLabDetail">
+  <div class="modal">
+    <h3 id="mLDTitle">Laboratorio</h3>
+    <p id="mLDDesc"></p>
+    <div id="mLDStats" style="margin-bottom:16px;"></div>
+    <div class="fg"><label class="fl">Cargar lista de Patrimonio para este lab</label>
+      <div class="upload-zone" id="labUploadZone">
+        <input type="file" id="labFileInput" accept=".xlsx,.xls,.csv" onchange="handleLabFile(this.files[0])">
+        <div style="font-size:28px;margin-bottom:8px">📊</div>
+        <p style="font-size:13px;font-weight:500">Arrastra el Excel de Patrimonio aquí</p>
+        <small style="color:var(--gray)">Se mapearán las columnas automáticamente</small>
+      </div>
+    </div>
+    <div id="mLDMapperSection" style="display:none;margin-bottom:14px;"></div>
+    <div class="btn-row">
+      <button class="btn btn-blue" id="mLDStartBtn" onclick="startLabVerification()" style="display:none">📷 Iniciar verificación</button>
+      <button class="btn btn-ghost" onclick="closeM('mLabDetail')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: TICKET ══ -->
+<div class="modal-bg" id="mTicket">
+  <div class="modal">
+    <h3>🎫 Crear Ticket de Observación</h3>
+    <p>La incidencia quedará registrada y podrá ser seguida por Patrimonio y el Jefe de Laboratorio.</p>
+    <div class="fg"><label class="fl">Tipo de observación</label>
+      <select class="fselect" id="tType">
+        <option value="datos_incorrectos">Datos incorrectos en Patrimonio</option>
+        <option value="no_registrado">Equipo físico no registrado en Patrimonio</option>
+        <option value="no_encontrado">Equipo de Patrimonio no encontrado físicamente</option>
+        <option value="codigo_errado">Código de inventario errado</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Descripción</label>
+      <textarea class="ftextarea" id="tDesc" placeholder="Describe la incoherencia…"></textarea>
+    </div>
+    <div class="fg"><label class="fl">Acción sugerida</label>
+      <select class="fselect" id="tAction">
+        <option value="actualizar_patrimonio">Patrimonio debe actualizar su base de datos</option>
+        <option value="verificar_fisico">Verificar existencia física nuevamente</option>
+        <option value="dar_baja">Dar de baja el equipo</option>
+        <option value="investigar">Investigar situación</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="createTicket()">📤 Enviar ticket</button>
+      <button class="btn btn-ghost"  onclick="closeM('mTicket')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: RESOLVE ══ -->
+<div class="modal-bg" id="mResolve">
+  <div class="modal">
+    <h3 id="mResTitle">Resolver Ticket</h3>
+    <p id="mResDesc"></p>
+    <div class="fg"><label class="fl">Resolución</label>
+      <select class="fselect" id="rAction">
+        <option value="actualizado">✅ Base de datos de Patrimonio actualizada</option>
+        <option value="baja">🗑 Equipo dado de baja oficialmente</option>
+        <option value="encontrado">📍 Equipo localizado físicamente</option>
+        <option value="rechazado">❌ Observación rechazada – datos correctos</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Comentario</label>
+      <textarea class="ftextarea" id="rComment" placeholder="Describe la acción tomada…"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ok"    onclick="resolveTicket()">✔ Cerrar ticket</button>
+      <button class="btn btn-amber" onclick="pendTicket()">⏳ En revisión</button>
+      <button class="btn btn-ghost" onclick="closeM('mResolve')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tIcon"></span><span id="tMsg"></span></div>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(13,27,42,.7);z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+  <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#4F83FF;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <div style="color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Sincronizando con Google Sheets…</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+
+<!-- API SETUP BANNER -->
+<div id="apiBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--green-dk);border-top:3px solid var(--gold);padding:14px 20px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 20px rgba(0,0,0,.2);">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:20px;">⚡</span>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;">Modo demo — sin conexión a Google Sheets</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.6);">Los datos no se guardarán al cerrar. Configura la URL del Apps Script para activar el guardado.</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
+      style="padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:12px;width:320px;outline:none;font-family:'DM Sans',sans-serif;"
+      onkeydown="if(event.key==='Enter')saveApiUrl()">
+    <button onclick="saveApiUrl()" style="background:var(--gold);color:var(--green-dk);font-family:'Syne',sans-serif;font-weight:800;font-size:12px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">Conectar</button>
+    <button onclick="document.getElementById('apiBanner').style.display='none'" style="background:transparent;color:rgba(255,255,255,.5);border:none;cursor:pointer;font-size:18px;padding:4px;">✕</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const PERIODS = ['Q1-2024','Q2-2024','Q3-2024','Q4-2024','Q1-2025','Q2-2025','Q3-2025','Q4-2025'];
+const EMOJIS  = ['🔬','🌱','💧','🧪','🐛','🌾','🧬','🪴','🌿','🏗️','⚗️','🦠','🌡️','🔭'];
+const BGCOLORS= ['#EEF4FF','#ECFDF5','#FFF7ED','#F5F3FF','#FEF2F2','#F0FDFA'];
+
+// Build 37 demo labs with sub-areas
+function buildDemoLabs() {
+  const names = [
+    'Lab. de Suelos y Aguas','Lab. de Fitopatología','Lab. de Entomología',
+    'Lab. de Biotecnología Vegetal','Lab. de Semillas y Granos','Lab. de Hidráulica Agrícola',
+    'Lab. de Química Agrícola','Lab. de Microbiología del Suelo','Lab. de Fisiología Vegetal',
+    'Lab. de Agrometeorología','Lab. de Postcosecha y Tecnología','Lab. de Fertilidad de Suelos',
+    'Lab. de Nematología','Lab. de Herbología y Malezas','Lab. de Virología Vegetal',
+    'Lab. de Nutrición de Cultivos','Lab. de Mejoramiento Genético','Lab. de Cultivo de Tejidos',
+    'Lab. de Parasitología Vegetal','Lab. de Irrigación y Drenaje','Lab. de Bromatología',
+    'Lab. de Análisis Foliar','Lab. de Acarología','Lab. de Control Biológico',
+    'Lab. de Tecnología de Semillas','Lab. de Manejo Integrado de Plagas','Lab. de Edafología',
+    'Lab. de Anatomía Vegetal','Lab. de Cartografía y SIG','Lab. de Maquinaria Agrícola',
+    'Lab. de Agroindustria','Lab. de Micología','Lab. de Fenología de Cultivos',
+    'Lab. de Bioquímica Vegetal','Lab. de Resistencia de Materiales','Lab. de Climatología',
+    'Lab. de Sistemas de Información Agropecuaria'
+  ];
+  // Demo sub-areas (algunos labs tienen áreas, otros no)
+  const demoSubAreas = {
+    0: ['Área de Análisis de Suelos','Área de Análisis de Aguas','Área de Riego'],
+    1: ['Área de Diagnóstico','Área de Cultivos Controlados'],
+    2: ['Área de Arácnidos','Área de Lombrices','Área de Pruebas'],
+    5: ['Área Hidráulica','Área de Modelamiento'],
+    6: ['Área de Análisis Cuantitativo','Área de Química Orgánica','Área de Instrumental'],
+    9: ['Área Meteorológica','Área de Climatología Aplicada'],
+    10: ['Área de Postcosecha','Área de Procesamiento','Área de Control de Calidad'],
+    17: ['Área de Tejidos Vegetales','Área de Meristemos'],
+    28: ['Área SIG','Área de Teledetección'],
+    29: ['Área de Tractores','Área de Implementos','Área de Taller'],
+    30: ['Área de Procesamiento','Área de Envasado','Área de Control'],
+  };
+  return names.map((n,i) => {
+    const subAreaNames = demoSubAreas[i] || [];
+    const subAreas = subAreaNames.map((sa, si) => {
+      const aeq = 3 + Math.floor(Math.random()*8);
+      const av  = Math.floor(Math.random()*(aeq+1));
+      const ao  = Math.floor(Math.random()*2);
+      return {
+        id: 'LAB-'+String(i+1).padStart(3,'0')+'-A'+String(si+1).padStart(2,'0'),
+        name: sa,
+        totalEquip: aeq, verified: av, openTickets: ao,
+        db: [], confirmed: [],
+      };
+    });
+    const totalEquip = subAreas.length>0
+      ? subAreas.reduce((s,a)=>s+a.totalEquip,0)
+      : 6 + Math.floor(Math.random()*20);
+    const verified = subAreas.length>0
+      ? subAreas.reduce((s,a)=>s+a.verified,0)
+      : Math.floor(Math.random()*(totalEquip+1));
+    const openT    = subAreas.length>0
+      ? subAreas.reduce((s,a)=>s+a.openTickets,0)
+      : Math.floor(Math.random()*3);
+    return {
+      id: 'LAB-'+String(i+1).padStart(3,'0'),
+      name: n,
+      area: subAreas.length>0 ? subAreas.map(a=>a.name).join(', ') : '—',
+      responsible: 'Dr. ' + ['García','López','Torres','Mendoza','Vargas','Castro','Quispe','Flores'][i%8],
+      icon: EMOJIS[i % EMOJIS.length],
+      color: BGCOLORS[i % BGCOLORS.length],
+      subAreas,           // ← lista de sub-áreas
+      db: [], confirmed: [],
+      totalEquip, verified,
+      openTickets: openT,
+      pendingTickets: Math.floor(Math.random()*2),
+      resolvedTickets: Math.floor(Math.random()*4),
+      period: 'Q4-2025',
+      history: PERIODS.map(p => ({
+        period:p,
+        incidencias: Math.floor(Math.random()*8),
+        resueltos: Math.floor(Math.random()*6)
+      }))
+    };
+  });
+}
+
+const S = {
+  labs: buildDemoLabs(),
+  tickets: buildDemoTickets(),
+  confirmed: [],
+  currentLabId: null,
+  currentScan: null,
+  currentTktCode: null,
+  resolvingId: null,
+  role: 'lab',
+  tktCounter: 100,
+  rawHeaders: [], rawRows: [],
+  charts: {},
+};
+
+function buildDemoTickets() {
+  const labIds = ['LAB-001','LAB-002','LAB-003','LAB-004','LAB-005','LAB-006','LAB-007','LAB-008'];
+  const types  = ['datos_incorrectos','no_registrado','no_encontrado','codigo_errado'];
+  const statuses = ['open','open','pending','resolved','resolved','resolved'];
+  const t = [];
+  let ctr = 1;
+  labIds.forEach(lid => {
+    const count = 1 + Math.floor(Math.random()*3);
+    for (let i=0;i<count;i++) {
+      const st = statuses[Math.floor(Math.random()*statuses.length)];
+      t.push({
+        id:'TKT-'+String(ctr++).padStart(3,'0'),
+        labId: lid,
+        code: lid+'-EQ-'+String(i+1).padStart(3,'0'),
+        type: types[Math.floor(Math.random()*types.length)],
+        desc: 'Incoherencia detectada durante verificación física del equipo.',
+        action: 'actualizar_patrimonio',
+        status: st,
+        createdBy:'Jefe de Laboratorio',
+        createdAt: new Date(Date.now()-Math.random()*30*86400000).toLocaleDateString('es-PE'),
+        diffs: st!=='resolved' ? [{field:'Área',old:'Área A',newV:'Área B'}] : [],
+        timeline:[
+          {time:'10/03/2025',actor:'Jefe Lab',msg:'Ticket creado',type:'open'},
+          ...(st==='resolved'?[{time:'15/03/2025',actor:'Patrimonio',msg:'Base de datos actualizada',type:'resolved'}]:[]),
+        ]
+      });
+    }
+  });
+  return t;
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+const PAGES=['labs','scan','tickets','inventory','c7','dashboard'];
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  document.querySelectorAll('.np').forEach((b,i)=>b.classList.toggle('on',PAGES[i]===id));
+  document.querySelectorAll('.mt').forEach((b,i)=>b.classList.toggle('on',PAGES[i]===id));
+  if(id==='labs')      renderLabs();
+  if(id==='tickets')   renderTickets();
+  if(id==='inventory') renderInventory();
+  if(id==='c7')        renderC7();
+  if(id==='dashboard') renderDashboard();
+}
+
+function setRole(r){
+  S.role=r;
+  document.getElementById('rLab').classList.toggle('on',r==='lab');
+  document.getElementById('rPat').classList.toggle('on',r==='patrimonio');
+  renderTickets();
+  toast(r==='lab'?'👤 Modo: Jefe de Laboratorio':'🏛 Modo: Oficina de Patrimonio','ℹ️');
+}
+
+// ═══════════════════════════════════════════
+// LABS
+// ═══════════════════════════════════════════
+function renderLabs(){
+  const q=(document.getElementById('labSearch')?.value||'').toLowerCase();
+  const sf=document.getElementById('labStatusFilter')?.value||'all';
+  let labs=S.labs;
+  if(q) labs=labs.filter(l=>l.name.toLowerCase().includes(q)||l.id.toLowerCase().includes(q));
+  if(sf!=='all'){
+    labs=labs.filter(l=>{
+      const pct=l.totalEquip>0?l.verified/l.totalEquip:0;
+      if(sf==='completo') return pct>=1&&l.openTickets===0;
+      if(sf==='en_proceso') return l.verified>0&&(pct<1||l.openTickets>0);
+      return l.verified===0;
+    });
+  }
+  // Global stats
+  const total=S.labs.length;
+  const done=S.labs.filter(l=>l.verified>=l.totalEquip&&l.openTickets===0).length;
+  const inProg=S.labs.filter(l=>l.verified>0&&(l.verified<l.totalEquip||l.openTickets>0)).length;
+  const pend=total-done-inProg;
+  document.getElementById('labStats').innerHTML=`
+    <div class="sc b"><div class="sn">${total}</div><div class="sl">Laboratorios</div></div>
+    <div class="sc g"><div class="sn">${done}</div><div class="sl">Completos</div></div>
+    <div class="sc a"><div class="sn">${inProg}</div><div class="sl">En proceso</div></div>
+    <div class="sc r"><div class="sn">${pend}</div><div class="sl">Sin iniciar</div></div>
+    <div class="sc p"><div class="sn">${S.tickets.filter(t=>t.status==='open').length}</div><div class="sl">Tickets abiertos</div></div>
+  `;
+  document.getElementById('labsSubtitle').textContent=`${total} laboratorios registrados · ${done} completados`;
+
+  if(labs.length===0){
+    document.getElementById('labGrid').innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🏫</div><p>Sin laboratorios con ese filtro</p></div>`;
+    return;
+  }
+  document.getElementById('labGrid').innerHTML=labs.map(l=>{
+    const pct=l.totalEquip>0?Math.round(l.verified/l.totalEquip*100):0;
+    const open=S.tickets.filter(t=>t.labId===l.id&&t.status==='open').length;
+    const statusColor=pct===100&&open===0?'var(--green)':l.verified>0?'var(--amber)':'var(--gray)';
+    const barColor=pct===100&&open===0?'var(--green)':'var(--blue)';
+    const isSel=S.currentLabId===l.id;
+    const hasAreas=l.subAreas&&l.subAreas.length>0;
+
+    // Sub-areas accordion rows
+    const areasHTML = hasAreas ? l.subAreas.map(a=>{
+      const ap=a.totalEquip>0?Math.round(a.verified/a.totalEquip*100):0;
+      const dotCls=a.openTickets>0?'warn':ap===100?'ok':'pend';
+      const statusLbl=a.openTickets>0?`<span class="area-badge bg-warn">${a.openTickets} ticket${a.openTickets>1?'s':''}</span>`:
+                      ap===100?`<span class="area-badge bg-ok">✓ Completo</span>`:
+                      a.verified>0?`<span class="area-badge bg-amb">${ap}%</span>`:
+                      `<span class="area-badge bg-gray">Sin iniciar</span>`;
+      return `<div class="area-row" onclick="event.stopPropagation();selectArea('${l.id}','${a.id}')">
+        <div class="area-dot ${dotCls}"></div>
+        <div class="area-name">${a.name}</div>
+        <div class="area-meta">${a.verified}/${a.totalEquip} eq.</div>
+        ${statusLbl}
+      </div>`;
+    }).join('') : '';
+
+    const chevHTML   = hasAreas ? `<span style="font-size:16px;color:var(--gray);margin-left:4px;transition:transform .2s" id="chev-${l.id}">›</span>` : '';
+    const openBadge  = open>0 ? `<span class="badge bg-warn">${open} ⚠</span>` : '';
+    const areaCount  = hasAreas ? ` · ${l.subAreas.length} áreas` : '';
+    const headerClick= hasAreas ? `toggleLabAreas('${l.id}')` : `openLabDetail('${l.id}')`;
+    const bottomHTML = hasAreas
+      ? `<div class="lab-areas" id="areas-${l.id}">${areasHTML}</div>
+         <div class="lab-toggle" id="toggle-${l.id}" onclick="event.stopPropagation();openLabDetail('${l.id}')">⚙ Configurar laboratorio</div>`
+      : `<div style="padding:8px 15px;border-top:1px solid var(--border)">
+           <button class="btn btn-ghost" style="width:100%;font-size:12px;padding:6px" onclick="openLabDetail('${l.id}')">⚙ Configurar</button>
+         </div>`;
+
+    return `<div class="lab-card${isSel?' sel':''}${!hasAreas?' no-areas':''}">
+      <div class="lch" onclick="${headerClick}">
+        <div class="lca" style="background:${l.color}">${l.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div class="lcn">${l.name}</div>
+          <div class="lcs">${l.id}${areaCount}</div>
+        </div>
+        ${openBadge}${chevHTML}
+      </div>
+      <div class="lcf">
+        <div class="lcs2" style="flex-shrink:0">${l.verified}/${l.totalEquip} eq.</div>
+        <div class="pmini"><div class="pminibar" style="width:${pct}%;background:${barColor}"></div></div>
+        <div class="lcs2" style="font-weight:700;color:${statusColor};flex-shrink:0">${pct}%</div>
+      </div>
+      ${bottomHTML}
+    </div>`;
+  }).join('');
+}
+
+function toggleLabAreas(labId){
+  const panel = document.getElementById('areas-'+labId);
+  const chev  = document.getElementById('chev-'+labId);
+  if(!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  if(chev) chev.style.transform = isOpen ? 'rotate(90deg)' : '';
+  chev && (chev.style.transition = 'transform .2s');
+}
+
+function selectArea(labId, areaId){
+  const lab  = S.labs.find(l=>l.id===labId);
+  const area = lab?.subAreas?.find(a=>a.id===areaId);
+  if(!lab||!area) return;
+  // Set current context to this area
+  S.currentLabId  = labId;
+  S.currentAreaId = areaId;
+  document.getElementById('scanLabName').textContent = lab.name+' › '+area.name;
+  document.getElementById('progLabName').textContent  = lab.name+' › '+area.name;
+  document.getElementById('noLabWarning').style.display='none';
+  goPage('scan');
+  updateProgress();
+  toast('Área: '+area.name,'📍');
+}
+
+function openLabDetail(labId){
+  const lab=S.labs.find(l=>l.id===labId);
+  if(!lab) return;
+  const open=S.tickets.filter(t=>t.labId===labId&&t.status==='open').length;
+  const pend=S.tickets.filter(t=>t.labId===labId&&t.status==='pending').length;
+  const res =S.tickets.filter(t=>t.labId===labId&&t.status==='resolved').length;
+  document.getElementById('mLDTitle').textContent=lab.icon+' '+lab.name;
+  document.getElementById('mLDDesc').textContent=`${lab.id} · ${lab.area} · Responsable: ${lab.responsible}`;
+  document.getElementById('mLDStats').innerHTML=`
+    <div class="stats" style="margin-bottom:0">
+      <div class="sc b"><div class="sn">${lab.totalEquip}</div><div class="sl">Equipos</div></div>
+      <div class="sc g"><div class="sn">${lab.verified}</div><div class="sl">Verificados</div></div>
+      <div class="sc r"><div class="sn">${open}</div><div class="sl">Tickets abiertos</div></div>
+      <div class="sc a"><div class="sn">${pend}</div><div class="sl">En revisión</div></div>
+    </div>`;
+  document.getElementById('mLDStartBtn').style.display=lab.db.length>0?'flex':'none';
+  document.getElementById('mLDMapperSection').style.display='none';
+  document.getElementById('mLabDetail').classList.add('open');
+  S._pendingLabId=labId;
+}
+
+function startLabVerification(){
+  const labId=S._pendingLabId;
+  S.currentLabId=labId;
+  const lab=S.labs.find(l=>l.id===labId);
+  document.getElementById('scanLabName').textContent=lab.name;
+  document.getElementById('progLabName').textContent=lab.name;
+  closeM('mLabDetail');
+  goPage('scan');
+  document.getElementById('noLabWarning').style.display='none';
+  updateProgress();
+  toast('Verificando: '+lab.name,'📷');
+  renderLabs();
+}
+
+function openAddLabModal(){
+  ['newLabName','newLabCode','newLabArea','newLabResp','newLabIcon'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mAddLab').classList.add('open');
+}
+
+function addLab(){
+  const name=document.getElementById('newLabName').value.trim();
+  if(!name){toast('El nombre es obligatorio','⚠️');return;}
+  const newLab={
+    id:'LAB-'+String(S.labs.length+1).padStart(3,'0'),
+    name, area:document.getElementById('newLabArea').value||'—',
+    responsible:document.getElementById('newLabResp').value||'—',
+    icon:document.getElementById('newLabIcon').value||'🔬',
+    color:BGCOLORS[S.labs.length%BGCOLORS.length],
+    db:[],confirmed:[],subAreas:[],
+    totalEquip:0,verified:0,openTickets:0,pendingTickets:0,resolvedTickets:0,
+    period:'Q4-2025',
+    history:PERIODS.map(p=>({period:p,incidencias:0,resueltos:0}))
+  };
+  S.labs.push(newLab);
+  closeM('mAddLab');
+  renderLabs();
+  updateSelects();
+  toast('Laboratorio "'+name+'" agregado ✔','✅');
+}
+
+// ═══════════════════════════════════════════
+// FILE IMPORT (per-lab)
+// ═══════════════════════════════════════════
+const labDropZone=document.getElementById('labUploadZone');
+labDropZone.addEventListener('dragover',e=>{e.preventDefault();labDropZone.classList.add('drag');});
+labDropZone.addEventListener('dragleave',()=>labDropZone.classList.remove('drag'));
+labDropZone.addEventListener('drop',e=>{e.preventDefault();labDropZone.classList.remove('drag');handleLabFile(e.dataTransfer.files[0]);});
+
+function handleLabFile(file){
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let rows,headers;
+    if(ext==='csv'){
+      const lines=e.target.result.trim().split('\n').map(l=>l.split(/[,;|\t]/));
+      headers=lines[0].map(h=>h.trim().replace(/"/g,''));
+      rows=lines.slice(1).map(r=>{const o={};headers.forEach((h,i)=>o[h]=(r[i]||'').trim().replace(/"/g,''));return o;});
+    } else {
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{header:1});
+      headers=data[0].map(h=>String(h||'').trim());
+      rows=data.slice(1).map(r=>{const o={};headers.forEach((h,i)=>o[h]=String(r[i]||'').trim());return o;}).filter(r=>Object.values(r).some(v=>v));
+    }
+    S.rawHeaders=headers;S.rawRows=rows;
+    showLabMapper(headers,rows);
+  };
+  if(ext==='csv')reader.readAsText(file);
+  else reader.readAsArrayBuffer(file);
+}
+
+function showLabMapper(headers,rows){
+  const codeKw=['codigo','code','inventario','cod','id'];
+  const descKw=['descripcion','descripción','denominacion','denominación','nombre','equipo','bien'];
+  const brandKw=['marca','brand','fabricante'];
+  const areaKw=['area','área','ambiente','ubicacion','ubicación'];
+  const statusKw=['estado','status','condicion'];
+  const autoMap={};
+  headers.forEach(h=>{
+    const hn=h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(codeKw.some(k=>hn.includes(k)))   autoMap.code=h;
+    if(descKw.some(k=>hn.includes(k)))   autoMap.desc=h;
+    if(brandKw.some(k=>hn.includes(k)))  autoMap.brand=h;
+    if(areaKw.some(k=>hn.includes(k)))   autoMap.area=h;
+    if(statusKw.some(k=>hn.includes(k))) autoMap.status=h;
+  });
+  const opts=['<option value="">— No incluido —</option>',...headers.map(h=>`<option value="${h}">${h}</option>`)].join('');
+  const fields=[{k:'code',l:'Código *'},{k:'desc',l:'Descripción *'},{k:'brand',l:'Marca'},{k:'area',l:'Área'},{k:'status',l:'Estado'}];
+  document.getElementById('mLDMapperSection').style.display='block';
+  document.getElementById('mLDMapperSection').innerHTML=`
+    <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px">Mapear columnas del archivo</div>
+    ${fields.map(f=>`
+      <div style="display:grid;grid-template-columns:1fr 20px 1fr;gap:6px;align-items:center;margin-bottom:7px;">
+        <div style="font-size:12px;font-weight:600;padding:7px 10px;background:var(--fog);border-radius:7px;">${f.l}</div>
+        <div style="text-align:center;font-size:13px;color:var(--gray)">→</div>
+        <select class="fselect" id="lmap_${f.k}" style="padding:7px 10px;">${opts}</select>
+      </div>`).join('')}
+    <button class="btn btn-blue" style="margin-top:8px;width:100%;" onclick="applyLabMapping()">✔ Confirmar y cargar</button>
+  `;
+  fields.forEach(f=>{const sel=document.getElementById('lmap_'+f.k);if(sel&&autoMap[f.k])sel.value=autoMap[f.k];});
+  document.getElementById('mLDStartBtn').style.display='none';
+}
+
+function applyLabMapping(){
+  const codeCol=document.getElementById('lmap_code')?.value;
+  const descCol=document.getElementById('lmap_desc')?.value;
+  const brandCol=document.getElementById('lmap_brand')?.value;
+  const areaCol=document.getElementById('lmap_area')?.value;
+  const statusCol=document.getElementById('lmap_status')?.value;
+  if(!codeCol||!descCol){toast('Código y Descripción son obligatorios','⚠️');return;}
+  const lab=S.labs.find(l=>l.id===S._pendingLabId);
+  lab.db=S.rawRows.filter(r=>r[codeCol]).map(r=>({
+    code:String(r[codeCol]).trim().toUpperCase(),
+    desc:r[descCol]||'',brand:brandCol?(r[brandCol]||'—'):'—',
+    area:areaCol?(r[areaCol]||'—'):'—',status:statusCol?(r[statusCol]||'—'):'—',
+  }));
+  lab.totalEquip=lab.db.length;
+  document.getElementById('mLDMapperSection').style.display='none';
+  document.getElementById('mLDStartBtn').style.display='flex';
+  toast(`${lab.db.length} equipos cargados para ${lab.name}`,'📂');
+}
+
+// ═══════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════
+let camActive=false,camStream=null,zxingReader=null,nativeLoop=null,scanCooldown=false;
+async function toggleCam(){
+  if(camActive){stopCam();return;}
+  const lab=S.labs.find(l=>l.id===S.currentLabId);
+  if(!lab||lab.db.length===0){toast('Selecciona un laboratorio con lista cargada','⚠️');return;}
+  const panel=document.getElementById('camPanel'),video=document.getElementById('camVideo'),status=document.getElementById('camStatus');
+  panel.classList.add('open');camActive=true;status.textContent='Iniciando cámara…';
+  document.getElementById('camBtn').textContent='✕';
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+    video.srcObject=camStream;await video.play();
+    status.textContent='Apunta al código de barras del equipo';
+    if('BarcodeDetector' in window){
+      const det=new BarcodeDetector({formats:['code_128','code_39','ean_13','ean_8','upc_a','itf','qr_code']});
+      const loop=async()=>{if(!camActive)return;if(!scanCooldown&&video.readyState===video.HAVE_ENOUGH_DATA){try{const b=await det.detect(video);if(b.length>0)onCodeDetected(b[0].rawValue);}catch(e){}}nativeLoop=requestAnimationFrame(loop);};
+      nativeLoop=requestAnimationFrame(loop);
+    } else if(typeof ZXing!=='undefined'){
+      status.textContent='Modo compatibilidad — apunta al código…';
+      zxingReader=new ZXing.BrowserBarcodeReader(300);
+      zxingReader.decodeFromStream(camStream,video,(result,err)=>{if(result&&!scanCooldown)onCodeDetected(result.getText());});
+    } else {
+      stopCam();toast('Ingresa el código manualmente','ℹ️');
+    }
+  }catch(e){
+    stopCam();
+    toast(e.name==='NotAllowedError'?'Permiso de cámara denegado — revisa ajustes del navegador':'Error de cámara: '+e.message,'❌');
+  }
+}
+function onCodeDetected(raw){
+  if(scanCooldown)return;scanCooldown=true;
+  const code=raw.trim().toUpperCase();
+  document.getElementById('camStatus').textContent='✅ Leído: '+code;
+  const panel=document.getElementById('camPanel');
+  panel.style.outline='3px solid var(--green)';
+  setTimeout(()=>panel.style.outline='',400);
+  document.getElementById('scanInput').value=code;
+  setTimeout(()=>{stopCam();doScan();scanCooldown=false;},500);
+}
+function stopCam(){
+  camActive=false;scanCooldown=false;
+  if(nativeLoop){cancelAnimationFrame(nativeLoop);nativeLoop=null;}
+  if(zxingReader){try{zxingReader.reset();}catch(e){}zxingReader=null;}
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  const v=document.getElementById('camVideo');v.srcObject=null;
+  document.getElementById('camPanel').classList.remove('open');
+  document.getElementById('camBtn').textContent='📷';
+}
+
+// ═══════════════════════════════════════════
+// SCAN
+// ═══════════════════════════════════════════
+function doScan(){
+  const lab=S.labs.find(l=>l.id===S.currentLabId);
+  if(!lab){document.getElementById('noLabWarning').style.display='flex';toast('Selecciona un laboratorio primero','⚠️');return;}
+  if(lab.db.length===0){toast('Carga la lista de Patrimonio para este laboratorio','⚠️');return;}
+  const raw=document.getElementById('scanInput').value.trim().toUpperCase();
+  if(!raw){toast('Ingresa un código primero','⚠️');return;}
+  hideResults();
+  const pat=lab.db.find(e=>e.code===raw);
+  if(!pat){S.currentScan={code:raw,fromPat:null,diffs:[]};showMiss(raw);return;}
+  if(S.confirmed.find(e=>e.code===raw&&e.labId===S.currentLabId)){toast('Este equipo ya fue verificado ✔','ℹ️');document.getElementById('scanInput').value='';return;}
+  // In real use, physical data comes from scanning; here same as patrimonio (no discrepancies unless demo)
+  const diffs=[];
+  S.currentScan={code:raw,fromPat:pat,actual:pat,diffs};
+  if(diffs.length===0)showOk(pat);else showWarn(pat,pat,diffs);
+}
+
+function showOk(pat){
+  document.getElementById('rOk').innerHTML=`
+    <div class="rh"><span class="ri">✅</span>
+      <div><div class="rt ok">Equipo verificado</div><div class="rsub ok">Coincide con el registro de Patrimonio</div></div>
+      <span class="badge bg-ok" style="margin-left:auto">● CONFORME</span>
+    </div>
+    <div class="rgrid">
+      <div class="rf"><label>Código</label><span>${pat.code}</span></div>
+      <div class="rf"><label>Descripción</label><span>${pat.desc}</span></div>
+      <div class="rf"><label>Marca</label><span>${pat.brand}</span></div>
+      <div class="rf"><label>Área</label><span>${pat.area}</span></div>
+      <div class="rf"><label>Estado</label><span>${pat.status}</span></div>
+      <div class="rf"><label>Fuente</label><span>Patrimonio ✅</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ok" onclick="confirmOk()">✔ Confirmar y registrar</button>
+      <button class="btn btn-ghost" onclick="hideResults()">Cancelar</button>
+    </div>`;
+  document.getElementById('rOk').classList.add('show');
+}
+
+function showWarn(pat,actual,diffs){
+  let dHTML=`<table class="diff-t"><thead><tr><th>Campo</th><th>Patrimonio</th><th>Físico</th></tr></thead><tbody>`;
+  diffs.forEach(d=>dHTML+=`<tr><td><strong>${d.field}</strong></td><td class="d-old">${d.old}</td><td class="d-new">${d.newV}</td></tr>`);
+  dHTML+='</tbody></table>';
+  document.getElementById('rWarn').innerHTML=`
+    <div class="rh"><span class="ri">⚠️</span>
+      <div><div class="rt warn">Incoherencia detectada</div><div class="rsub warn">Los datos no coinciden con Patrimonio</div></div>
+      <span class="badge bg-warn" style="margin-left:auto">● DIFERENCIA</span>
+    </div>${dHTML}
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="openTktModal()">🎫 Crear ticket</button>
+      <button class="btn btn-ghost" onclick="hideResults()">Cancelar</button>
+    </div>`;
+  document.getElementById('rWarn').classList.add('show');
+}
+
+function showMiss(code){
+  document.getElementById('rMiss').innerHTML=`
+    <div class="rh"><span class="ri">❓</span>
+      <div><div class="rt miss">Código no encontrado</div><div class="rsub miss">No existe en el registro de Patrimonio</div></div>
+    </div>
+    <div style="font-size:14px;font-weight:600;padding:9px 12px;background:#fff;border-radius:8px;margin-bottom:11px">📦 ${code}</div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="openTktModalMiss()">🎫 Reportar</button>
+      <button class="btn btn-ghost" onclick="hideResults()">Cancelar</button>
+    </div>`;
+  document.getElementById('rMiss').classList.add('show');
+}
+
+function hideResults(){['rOk','rWarn','rMiss'].forEach(id=>document.getElementById(id).classList.remove('show'));}
+
+function confirmOk(){
+  const s=S.currentScan,lab=S.labs.find(l=>l.id===S.currentLabId);
+  S.confirmed.push({...s.fromPat,labId:S.currentLabId,labName:lab.name,timestamp:new Date().toLocaleTimeString('es-PE')});
+  lab.verified=S.confirmed.filter(c=>c.labId===S.currentLabId).length;
+  hideResults();document.getElementById('scanInput').value='';
+  updateProgress();toast('Equipo '+s.code+' confirmado ✔','✅');
+}
+
+function updateProgress(){
+  const lab=S.labs.find(l=>l.id===S.currentLabId);
+  if(!lab){
+    document.getElementById('progLabel').textContent='Selecciona un laboratorio';
+    ['sOk','sWarn','sPend','sTotal'].forEach(id=>document.getElementById(id).textContent='0');
+    document.getElementById('progBar').style.width='0%';return;
+  }
+  const confirmed=S.confirmed.filter(c=>c.labId===lab.id);
+  const total=lab.totalEquip||0;
+  const done=confirmed.length;
+  const openT=S.tickets.filter(t=>t.labId===lab.id&&t.status!=='resolved').length;
+  document.getElementById('progLabel').textContent=`${done} de ${total} equipos verificados`;
+  document.getElementById('progBar').style.width=total?(done/total*100)+'%':'0%';
+  document.getElementById('sOk').textContent=done-S.tickets.filter(t=>t.labId===lab.id&&confirmed.find(c=>c.code===t.code)&&t.status!=='resolved').length;
+  document.getElementById('sWarn').textContent=openT;
+  document.getElementById('sPend').textContent=Math.max(0,total-done);
+  document.getElementById('sTotal').textContent=total;
+  // Global badge
+  const globalOpen=S.tickets.filter(t=>t.status==='open').length;
+  document.getElementById('nb').textContent=globalOpen;
+  document.getElementById('nb').style.display=globalOpen>0?'inline-block':'none';
+}
+
+// ═══════════════════════════════════════════
+// TICKETS
+// ═══════════════════════════════════════════
+function openTktModal(){
+  S.currentTktCode=S.currentScan.code;
+  document.getElementById('tDesc').value=S.currentScan.diffs?.map(d=>`${d.field}: "${d.old}" → "${d.newV}"`).join('\n')||'';
+  document.getElementById('mTicket').classList.add('open');
+}
+function openTktModalMiss(){
+  S.currentTktCode=S.currentScan.code;
+  document.getElementById('tDesc').value='Equipo encontrado físicamente pero no registrado en Patrimonio.';
+  document.getElementById('tType').value='no_registrado';
+  document.getElementById('mTicket').classList.add('open');
+}
+function createTicket(){
+  const lab=S.labs.find(l=>l.id===S.currentLabId);
+  const tkt={
+    id:'TKT-'+String(S.tktCounter++).padStart(3,'0'),
+    labId:S.currentLabId,labName:lab?.name||'—',
+    code:S.currentTktCode,
+    type:document.getElementById('tType').value,
+    desc:document.getElementById('tDesc').value||'Sin descripción',
+    action:document.getElementById('tAction').value,
+    status:'open',
+    createdBy:S.role==='lab'?'Jefe de Laboratorio':'Patrimonio',
+    createdAt:new Date().toLocaleString('es-PE'),
+    diffs:S.currentScan?.diffs||[],
+    timeline:[{time:new Date().toLocaleString('es-PE'),actor:S.role==='lab'?'Jefe de Laboratorio':'Patrimonio',msg:'Ticket creado',type:'open'}]
+  };
+  S.tickets.push(tkt);
+  if(lab) lab.openTickets=(S.tickets.filter(t=>t.labId===lab.id&&t.status==='open').length);
+  if(!S.confirmed.find(c=>c.code===S.currentTktCode&&c.labId===S.currentLabId)){
+    const pat=lab?.db.find(e=>e.code===S.currentTktCode)||{code:S.currentTktCode,desc:S.currentTktCode,brand:'—',area:'—',status:'—'};
+    S.confirmed.push({...pat,labId:S.currentLabId,labName:lab?.name||'—',timestamp:new Date().toLocaleTimeString('es-PE'),hasTicket:true});
+    if(lab)lab.verified=S.confirmed.filter(c=>c.labId===lab.id).length;
+  }
+  closeM('mTicket');hideResults();document.getElementById('scanInput').value='';
+  updateProgress();updateSelects();
+  toast('Ticket '+tkt.id+' creado 📤','🎫');
+}
+function openResolveM(id){
+  S.resolvingId=id;
+  const t=S.tickets.find(t=>t.id===id);
+  document.getElementById('mResTitle').textContent='Resolver '+t.id;
+  document.getElementById('mResDesc').textContent=`Código: ${t.code}  ·  Lab: ${t.labName||t.labId}  ·  Creado por: ${t.createdBy}`;
+  document.getElementById('rComment').value='';
+  document.getElementById('mResolve').classList.add('open');
+}
+function resolveTicket(){
+  const t=S.tickets.find(t=>t.id===S.resolvingId);
+  t.status='resolved';t.resolvedAt=new Date().toLocaleString('es-PE');
+  t.resolvedBy=S.role==='lab'?'Jefe de Laboratorio':'Patrimonio';
+  t.timeline.push({time:t.resolvedAt,actor:t.resolvedBy,msg:'Cerrado: '+(document.getElementById('rComment').value||document.getElementById('rAction').options[document.getElementById('rAction').selectedIndex].text),type:'resolved'});
+  const lab=S.labs.find(l=>l.id===t.labId);
+  if(lab){lab.openTickets=S.tickets.filter(t2=>t2.labId===lab.id&&t2.status==='open').length;lab.resolvedTickets=S.tickets.filter(t2=>t2.labId===lab.id&&t2.status==='resolved').length;}
+  closeM('mResolve');updateProgress();renderTickets();toast('Ticket '+t.id+' cerrado ✔','✅');
+}
+function pendTicket(){
+  const t=S.tickets.find(t=>t.id===S.resolvingId);
+  t.status='pending';
+  t.timeline.push({time:new Date().toLocaleString('es-PE'),actor:S.role==='lab'?'Jefe de Laboratorio':'Patrimonio',msg:'Marcado en revisión: '+(document.getElementById('rComment').value||'En proceso'),type:'pending'});
+  const lab=S.labs.find(l=>l.id===t.labId);
+  if(lab)lab.pendingTickets=S.tickets.filter(t2=>t2.labId===lab.id&&t2.status==='pending').length;
+  closeM('mResolve');updateProgress();renderTickets();toast('Ticket en revisión ⏳','⏳');
+}
+function toggleTktBody(id){document.getElementById('tb-'+id).classList.toggle('open');}
+
+function renderTickets(){
+  const q=(document.getElementById('tktSearch')?.value||'').toLowerCase();
+  const lf=document.getElementById('tktLabFilter')?.value||'all';
+  const sf=document.getElementById('tktStatusFilter')?.value||'all';
+  const open=S.tickets.filter(t=>t.status==='open').length;
+  const pend=S.tickets.filter(t=>t.status==='pending').length;
+  const res=S.tickets.filter(t=>t.status==='resolved').length;
+  document.getElementById('tktStats').innerHTML=`
+    <div class="sc r"><div class="sn">${open}</div><div class="sl">Abiertos</div></div>
+    <div class="sc a"><div class="sn">${pend}</div><div class="sl">En revisión</div></div>
+    <div class="sc g"><div class="sn">${res}</div><div class="sl">Resueltos</div></div>
+    <div class="sc b"><div class="sn">${S.tickets.length}</div><div class="sl">Total</div></div>`;
+  let tkts=S.tickets;
+  if(q)tkts=tkts.filter(t=>t.code.toLowerCase().includes(q)||(t.labName||'').toLowerCase().includes(q)||(t.desc||'').toLowerCase().includes(q));
+  if(lf!=='all')tkts=tkts.filter(t=>t.labId===lf);
+  if(sf!=='all')tkts=tkts.filter(t=>t.status===sf);
+  if(tkts.length===0){document.getElementById('tktList').innerHTML=`<div class="empty"><div class="empty-icon">🎫</div><p>${S.tickets.length===0?'Sin tickets. ¡Todo en orden!':'Sin resultados con ese filtro.'}</p></div>`;return;}
+  const sLabel={open:'🔴 Abierto',pending:'🟡 En revisión',resolved:'🟢 Resuelto'};
+  const sBadge={open:'bg-warn',pending:'bg-amb',resolved:'bg-ok'};
+  document.getElementById('tktList').innerHTML=tkts.map(t=>`
+    <div class="tkt ${t.status}">
+      <div class="tkt-h" onclick="toggleTktBody('${t.id}')">
+        <div>
+          <div class="tkt-id">${t.id} · ${t.createdAt}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="tkt-code">${t.code}</div>
+            <span class="badge bg-blue" style="font-size:10px">${t.labId}</span>
+          </div>
+          <div class="tkt-desc">${(t.desc||'').substring(0,80)}${(t.desc||'').length>80?'…':''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <span class="badge ${sBadge[t.status]}">${sLabel[t.status]}</span>
+          <div style="font-size:10px;color:var(--gray);margin-top:3px">${t.createdBy}</div>
+        </div>
+      </div>
+      <div class="tkt-b" id="tb-${t.id}">
+        ${t.diffs&&t.diffs.length?`<div class="ts-title">Diferencias</div><table class="diff-t"><thead><tr><th>Campo</th><th>Patrimonio</th><th>Físico</th></tr></thead><tbody>${t.diffs.map(d=>`<tr><td><strong>${d.field}</strong></td><td class="d-old">${d.old}</td><td class="d-new">${d.newV}</td></tr>`).join('')}</tbody></table>`:''}
+        <div class="ts-title">Historial</div>
+        <ul class="timeline">${t.timeline.map(tl=>`<li class="tl ${tl.type}"><span class="tl-t">${tl.time}</span><span><strong>${tl.actor}</strong> — ${tl.msg}</span></li>`).join('')}</ul>
+        ${t.status!=='resolved'?`<div class="resolve-row"><button class="btn btn-ok" onclick="openResolveM('${t.id}')">✔ Resolver</button>${t.status==='open'?`<button class="btn btn-amber" onclick="S.resolvingId='${t.id}';document.getElementById('rComment').value='';pendTicket()">⏳ En revisión</button>`:''}</div>`:`<div style="font-size:11px;color:var(--green);margin-top:8px;padding:7px 11px;background:#EDFAF3;border-radius:7px">✅ Resuelto el ${t.resolvedAt} por ${t.resolvedBy}</div>`}
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// INVENTORY
+// ═══════════════════════════════════════════
+function renderInventory(){
+  const q=(document.getElementById('invSearch')?.value||'').toLowerCase();
+  const lf=document.getElementById('invLabFilter')?.value||'all';
+  const sf=document.getElementById('invStateFilter')?.value||'all';
+  let items=S.confirmed;
+  if(q)items=items.filter(i=>i.code.toLowerCase().includes(q)||i.desc.toLowerCase().includes(q));
+  if(lf!=='all')items=items.filter(i=>i.labId===lf);
+  if(sf!=='all')items=items.filter(i=>i.status===sf);
+  const stC={'ÓPTIMO':'#C6EFCE','EN MANTENIMIENTO':'#FFEB9C','DE BAJA':'#FFC7CE'};
+  if(items.length===0){document.getElementById('invBody').innerHTML=`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--gray)">Sin equipos verificados aún.</td></tr>`;return;}
+  document.getElementById('invBody').innerHTML=items.map((e,i)=>{
+    const tkt=S.tickets.find(t=>t.code===e.code&&t.labId===e.labId&&t.status!=='resolved');
+    return `<tr><td>${i+1}</td><td><strong>${e.code}</strong>${tkt?` <span class="badge bg-warn" style="font-size:9px">🎫</span>`:''}</td>
+      <td>${e.desc}</td><td>${e.brand}</td><td>${e.area}</td>
+      <td><span style="background:${stC[e.status]||'#eee'};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${e.status}</span></td>
+      <td><span class="badge bg-blue" style="font-size:10px">${e.labId||'—'}</span></td>
+      <td style="font-size:11px;color:var(--gray)">${e.timestamp}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// C7
+// ═══════════════════════════════════════════
+function renderC7(){
+  const labId=document.getElementById('c7LabSelect')?.value;
+  const msg=document.getElementById('c7msg');
+  if(!labId){
+    document.getElementById('c7Blocked').style.display='none';
+    document.getElementById('c7Content').style.display='none';
+    document.getElementById('c7Empty').style.display='block';
+    msg.textContent='Selecciona un laboratorio';return;
+  }
+  const lab=S.labs.find(l=>l.id===labId);
+  const confirmed=S.confirmed.filter(c=>c.labId===labId);
+  const openT=S.tickets.filter(t=>t.labId===labId&&t.status!=='resolved').length;
+  document.getElementById('c7Empty').style.display='none';
+  if(confirmed.length===0){
+    document.getElementById('c7Blocked').style.display='none';
+    document.getElementById('c7Content').style.display='none';
+    document.getElementById('c7Empty').style.display='block';
+    msg.textContent='Sin equipos verificados en este laboratorio';return;
+  }
+  if(openT>0){
+    document.getElementById('c7Blocked').style.display='block';
+    document.getElementById('c7Content').style.display='none';
+    msg.textContent=`${openT} ticket(s) pendiente(s) en este lab`;return;
+  }
+  document.getElementById('c7Blocked').style.display='none';
+  document.getElementById('c7Content').style.display='block';
+  msg.textContent=lab.name+' — lista validada';
+  const stC={'ÓPTIMO':'#C6EFCE','EN MANTENIMIENTO':'#FFEB9C','DE BAJA':'#FFC7CE'};
+  document.getElementById('c7Meta').innerHTML=`
+    <div class="c7-mi"><label>Laboratorio</label><span>${lab.name}</span></div>
+    <div class="c7-mi"><label>Código</label><span>${lab.id}</span></div>
+    <div class="c7-mi"><label>Facultad</label><span>Facultad de Agronomía</span></div>
+    <div class="c7-mi"><label>Fecha</label><span>${new Date().toLocaleDateString('es-PE')}</span></div>
+    <div class="c7-mi"><label>Responsable</label><span>${lab.responsible}</span></div>
+    <div class="c7-mi"><label>Total equipos</label><span>${confirmed.length}</span></div>`;
+  document.getElementById('c7Body').innerHTML=confirmed.map((e,i)=>`
+    <tr><td>${i+1}</td><td><strong>${e.code}</strong></td><td>${e.desc}</td><td>${e.brand}</td><td>${e.area}</td>
+    <td style="background:${stC[e.status]||'#eee'}">${e.status}</td></tr>`).join('');
+  document.getElementById('c7Total').textContent=`Total: ${confirmed.length} equipos registrados`;
+}
+
+function exportCSV(){
+  const labId=document.getElementById('c7LabSelect')?.value;
+  const items=S.confirmed.filter(c=>c.labId===labId);
+  if(!items.length){toast('Sin datos para exportar','⚠️');return;}
+  const rows=[['N°','Código Inventario','Descripción','Marca','Área/Ambiente','Estado']];
+  items.forEach((e,i)=>rows.push([i+1,e.code,e.desc,e.brand,e.area,e.status]));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='C7_'+labId+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
+let chartInstances={};
+function renderDashboard(){
+  const totalLabs=S.labs.length;
+  const completedLabs=S.labs.filter(l=>l.verified>=l.totalEquip&&S.tickets.filter(t=>t.labId===l.id&&t.status!=='resolved').length===0).length;
+  const totalTkts=S.tickets.length;
+  const openTkts=S.tickets.filter(t=>t.status==='open').length;
+  const pendTkts=S.tickets.filter(t=>t.status==='pending').length;
+  const resTkts=S.tickets.filter(t=>t.status==='resolved').length;
+  document.getElementById('dashKpis').innerHTML=`
+    <div class="sc b"><div class="sn">${totalLabs}</div><div class="sl">Laboratorios</div></div>
+    <div class="sc g"><div class="sn">${completedLabs}</div><div class="sl">Completados</div></div>
+    <div class="sc r"><div class="sn">${openTkts}</div><div class="sl">Tickets abiertos</div></div>
+    <div class="sc a"><div class="sn">${pendTkts}</div><div class="sl">En revisión</div></div>
+    <div class="sc g"><div class="sn">${resTkts}</div><div class="sl">Tickets resueltos</div></div>
+    <div class="sc p"><div class="sn">${totalTkts}</div><div class="sl">Total tickets</div></div>`;
+
+  // Donut chart
+  const donutCtx=document.getElementById('chartDonut').getContext('2d');
+  if(chartInstances.donut)chartInstances.donut.destroy();
+  chartInstances.donut=new Chart(donutCtx,{type:'doughnut',data:{
+    labels:['Abiertos','En revisión','Resueltos'],
+    datasets:[{data:[openTkts,pendTkts,resTkts],backgroundColor:['#C0392B','#D4860A','#3D6B4F'],borderWidth:0,hoverOffset:6}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:14}}}}});
+
+  // Bar chart by type
+  const typeLabels={'datos_incorrectos':'Datos incorrectos','no_registrado':'No registrado','no_encontrado':'No encontrado','codigo_errado':'Cód. errado','otro':'Otro'};
+  const typeCounts={};
+  S.tickets.forEach(t=>{typeCounts[t.type]=(typeCounts[t.type]||0)+1;});
+  const barCtx=document.getElementById('chartBar').getContext('2d');
+  if(chartInstances.bar)chartInstances.bar.destroy();
+  chartInstances.bar=new Chart(barCtx,{type:'bar',data:{
+    labels:Object.keys(typeCounts).map(k=>typeLabels[k]||k),
+    datasets:[{data:Object.values(typeCounts),backgroundColor:'#3D6B4F',borderRadius:6,barPercentage:.6}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:11}}}}}});
+
+  // Line chart — quarterly history
+  const lineCtx=document.getElementById('chartLine').getContext('2d');
+  if(chartInstances.line)chartInstances.line.destroy();
+  // Aggregate incidencias across all labs per period
+  const periodInc={},periodRes={};
+  PERIODS.forEach(p=>{periodInc[p]=0;periodRes[p]=0;});
+  S.labs.forEach(lab=>{
+    lab.history.forEach(h=>{
+      periodInc[h.period]=(periodInc[h.period]||0)+h.incidencias;
+      periodRes[h.period]=(periodRes[h.period]||0)+h.resueltos;
+    });
+  });
+  chartInstances.line=new Chart(lineCtx,{type:'line',data:{
+    labels:PERIODS,
+    datasets:[
+      {label:'Incidencias detectadas',data:PERIODS.map(p=>periodInc[p]),borderColor:'#C0392B',backgroundColor:'rgba(192,57,43,.08)',tension:.4,pointRadius:5,pointBackgroundColor:'#C0392B',fill:true},
+      {label:'Tickets resueltos',data:PERIODS.map(p=>periodRes[p]),borderColor:'#3D6B4F',backgroundColor:'rgba(61,107,79,.10)',tension:.4,pointRadius:5,pointBackgroundColor:'#3D6B4F',fill:true}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:14}}},scales:{y:{beginAtZero:true,ticks:{stepSize:2}},x:{ticks:{font:{size:11}}}}}});
+
+  // Labs table
+  const stC={'ÓPTIMO':'#C6EFCE','EN MANTENIMIENTO':'#FFEB9C','DE BAJA':'#FFC7CE'};
+  document.getElementById('dashLabTable').innerHTML=S.labs.map(lab=>{
+    const open=S.tickets.filter(t=>t.labId===lab.id&&t.status==='open').length;
+    const pend=S.tickets.filter(t=>t.labId===lab.id&&t.status==='pending').length;
+    const res=S.tickets.filter(t=>t.labId===lab.id&&t.status==='resolved').length;
+    const conf=S.confirmed.filter(c=>c.labId===lab.id).length;
+    const pct=lab.totalEquip>0?Math.round(conf/lab.totalEquip*100):0;
+    const c7ready=conf>0&&open===0&&pend===0;
+    return `<tr>
+      <td><strong>${lab.icon} ${lab.name}</strong><div style="font-size:10px;color:var(--gray)">${lab.id}</div></td>
+      <td style="text-align:center">${lab.totalEquip}</td>
+      <td style="text-align:center">${conf}</td>
+      <td style="text-align:center;color:var(--green);font-weight:600">${conf-open}</td>
+      <td style="text-align:center"><span class="badge bg-warn">${open}</span></td>
+      <td style="text-align:center"><span class="badge bg-amb">${pend}</span></td>
+      <td style="text-align:center"><span class="badge bg-ok">${res}</span></td>
+      <td style="text-align:center">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;background:var(--border);border-radius:20px;height:6px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--blue)'};border-radius:20px;"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;min-width:28px">${pct}%</span>
+        </div>
+      </td>
+      <td style="text-align:center">${c7ready?`<span class="badge bg-ok">✅ Listo</span>`:`<span class="badge bg-gray">⏳ Pendiente</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE SHEETS API LAYER
+// ═══════════════════════════════════════════
+
+// ▶ PEGA AQUÍ LA URL DE TU APPS SCRIPT (después de publicar)
+const API_URL = '';  // Ej: 'https://script.google.com/macros/s/AKfycb.../exec'
+
+let API_READY = false;  // true cuando API_URL está configurada
+
+async function api(action, data={}) {
+  return apiCall(action, data);
+}
+
+// ── Carga inicial desde Sheets ──────────────────────────────
+async function loadFromSheets() {
+  if (!API_URL) {
+    showApiBanner();
+    return false;
+  }
+  setLoading(true);
+  try {
+    // Init sheets structure
+    await api('init');
+
+    // Load labs
+    const labsRes = await api('getLabs');
+    if (labsRes?.ok && labsRes.data.length > 0) {
+      S.labs = labsRes.data.map(r => ({
+        id: r.id, name: r.nombre, area: r.area,
+        responsible: r.responsable, icon: r.icono || '🔬',
+        color: r.color || '#EEF4FF',
+        totalEquip: Number(r.totalEquipos) || 0,
+        verified: Number(r.verificados) || 0,
+        period: r.periodo || 'Q4-2025',
+        db: [], confirmed: [],
+        openTickets:0, pendingTickets:0, resolvedTickets:0,
+        history: [],
+      }));
+    }
+
+    // Load tickets
+    const tktRes = await api('getTickets');
+    if (tktRes?.ok) {
+      S.tickets = tktRes.data.map(r => ({
+        id: r.id, labId: r.labId, labName: r.labNombre,
+        code: r.codigo, type: r.tipo, desc: r.descripcion,
+        action: r.accion, status: r.estado,
+        createdBy: r.creadoPor, createdAt: r.creadoEn,
+        resolvedBy: r.resueltoPor, resolvedAt: r.resueltoEn,
+        diffs: r.diffs || [], timeline: r.timeline || [],
+      }));
+    }
+
+    // Load inventory
+    const invRes = await api('getInventory');
+    if (invRes?.ok) {
+      S.confirmed = invRes.data.map(r => ({
+        labId: r.labId, labName: r.labNombre,
+        code: r.codigo, desc: r.descripcion,
+        brand: r.marca, area: r.area, status: r.estado,
+        timestamp: r.timestamp,
+      }));
+    }
+
+    // Recalculate lab ticket counts from loaded tickets
+    S.labs.forEach(lab => {
+      lab.openTickets    = S.tickets.filter(t=>t.labId===lab.id&&t.status==='open').length;
+      lab.pendingTickets = S.tickets.filter(t=>t.labId===lab.id&&t.status==='pending').length;
+      lab.resolvedTickets= S.tickets.filter(t=>t.labId===lab.id&&t.status==='resolved').length;
+      lab.verified       = S.confirmed.filter(c=>c.labId===lab.id).length;
+    });
+
+    hideApiSetup();
+    toast('✅ Datos sincronizados con Google Sheets','📊');
+    return true;
+  } catch(e) {
+    toast('Error al cargar datos: '+e.message,'❌');
+    return false;
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Guardado en Sheets ──────────────────────────────────────
+async function persistLab(lab) {
+  const r = await api('saveLab', {
+    id: lab.id, nombre: lab.name, area: lab.area,
+    responsable: lab.responsible, icono: lab.icon,
+    color: lab.color, totalEquipos: lab.totalEquip,
+    verificados: lab.verified, periodo: lab.period || 'Q4-2025',
+    fechaCreacion: new Date().toLocaleDateString('es-PE'),
+  });
+  if (!r?.ok) console.warn('persistLab failed', r);
+}
+
+async function persistItem(item) {
+  const r = await api('saveItem', {
+    id: item.labId+'-'+item.code,
+    labId: item.labId, labNombre: item.labName,
+    codigo: item.code, descripcion: item.desc,
+    marca: item.brand, area: item.area, estado: item.status,
+    timestamp: item.timestamp,
+    periodo: currentPeriod(),
+  });
+  if (!r?.ok) console.warn('persistItem failed', r);
+}
+
+async function persistTicket(tkt) {
+  const r = await api('saveTicket', {
+    id: tkt.id, labId: tkt.labId, labNombre: tkt.labName,
+    codigo: tkt.code, tipo: tkt.type, descripcion: tkt.desc,
+    accion: tkt.action, estado: tkt.status,
+    creadoPor: tkt.createdBy, creadoEn: tkt.createdAt,
+    resueltoPor: tkt.resolvedBy||'', resueltoEn: tkt.resolvedAt||'',
+    diffs: tkt.diffs, timeline: tkt.timeline,
+  });
+  if (!r?.ok) console.warn('persistTicket failed', r);
+}
+
+async function updateTicketInSheets(tkt) {
+  const r = await api('updateTicket', {
+    id: tkt.id, estado: tkt.status,
+    resueltoPor: tkt.resolvedBy||'', resueltoEn: tkt.resolvedAt||'',
+    timeline: tkt.timeline,
+  });
+  if (!r?.ok) console.warn('updateTicket failed', r);
+}
+
+async function persistHistory(lab) {
+  const period = currentPeriod();
+  const open   = S.tickets.filter(t=>t.labId===lab.id&&t.status!=='resolved').length;
+  const res    = S.tickets.filter(t=>t.labId===lab.id&&t.status==='resolved').length;
+  await api('saveHistory', {
+    labId: lab.id, periodo: period,
+    incidencias: S.tickets.filter(t=>t.labId===lab.id).length,
+    resueltos: res,
+    verificados: S.confirmed.filter(c=>c.labId===lab.id).length,
+    totalEquipos: lab.totalEquip,
+    fechaRegistro: new Date().toLocaleDateString('es-PE'),
+  });
+}
+
+function currentPeriod() {
+  const now=new Date();
+  const q=Math.ceil((now.getMonth()+1)/3);
+  return `Q${q}-${now.getFullYear()}`;
+}
+
+// ── UI: API setup banner ────────────────────────────────────
+function showApiBanner() {
+  document.getElementById('apiBanner').style.display='flex';
+}
+function hideApiSetup() {
+  document.getElementById('apiBanner').style.display='none';
+  document.getElementById('apiSetupPage').style.display='none';
+}
+function setLoading(on) {
+  document.getElementById('loadingOverlay').style.display=on?'flex':'none';
+}
+function saveApiUrl() {
+  const url=document.getElementById('apiUrlInput').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    toast('URL inválida — debe empezar con https://script.google.com','⚠️');return;
+  }
+  // Save to localStorage for persistence across reloads
+  try{ localStorage.setItem('c7lab_api_url', url); }catch(e){}
+  window._API_URL_OVERRIDE = url;
+  document.getElementById('apiBanner').style.display='none';
+  toast('Conectando…','⏳');
+  setTimeout(()=>loadFromSheets(), 300);
+}
+
+// ── Read saved URL on load ──────────────────────────────────
+(function(){
+  try{
+    const saved = localStorage.getItem('c7lab_api_url');
+    if(saved) window._API_URL_OVERRIDE = saved;
+  }catch(e){}
+  const params = new URLSearchParams(window.location.search);
+  const apiParam = params.get('api');
+  if(apiParam) window._API_URL_OVERRIDE = apiParam;
+})();
+
+async function apiCall(action, data={}){
+  const url = window._API_URL_OVERRIDE || API_URL;
+  if(!url) return null;
+  try{
+    const res = await fetch(url, {method:'POST', body:JSON.stringify({action, data})});
+    return await res.json();
+  }catch(e){ console.warn('API:', e.message); return null; }
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function closeM(id){document.getElementById(id).classList.remove('open');}
+
+function updateSelects(){
+  const labOpts=S.labs.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  ['tktLabFilter','invLabFilter'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){const cur=el.value;el.innerHTML='<option value="all">Todos los labs</option>'+labOpts;el.value=cur;}
+  });
+  const c7sel=document.getElementById('c7LabSelect');
+  if(c7sel){const cur=c7sel.value;c7sel.innerHTML='<option value="">— Seleccionar laboratorio —</option>'+labOpts;if(cur)c7sel.value=cur;}
+}
+
+let _tt;
+function toast(msg,icon='ℹ️'){
+  const el=document.getElementById('toast');
+  document.getElementById('tMsg').textContent=msg;document.getElementById('tIcon').textContent=icon;
+  el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ── Patch save functions to also persist ───────────────────
+const _origConfirmOk=confirmOk;
+confirmOk=async function(){
+  _origConfirmOk();
+  const item=S.confirmed[S.confirmed.length-1];
+  if(item) await persistItem(item);
+  const lab=S.labs.find(l=>l.id===S.currentLabId);
+  if(lab) await persistLab(lab);
+};
+
+const _origCreateTicket=createTicket;
+createTicket=async function(){
+  _origCreateTicket();
+  const tkt=S.tickets[S.tickets.length-1];
+  if(tkt) await persistTicket(tkt);
+};
+
+const _origResolveTicket=resolveTicket;
+resolveTicket=async function(){
+  _origResolveTicket();
+  const tkt=S.tickets.find(t=>t.id===S.resolvingId);
+  if(tkt){await updateTicketInSheets(tkt);await persistHistory(S.labs.find(l=>l.id===tkt.labId));}
+};
+
+const _origPendTicket=pendTicket;
+pendTicket=async function(){
+  _origPendTicket();
+  const tkt=S.tickets.find(t=>t.id===S.resolvingId);
+  if(tkt) await updateTicketInSheets(tkt);
+};
+
+const _origAddLab=addLab;
+addLab=async function(){
+  _origAddLab();
+  const lab=S.labs[S.labs.length-1];
+  if(lab) await persistLab(lab);
+};
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init() {
+  updateSelects();
+  updateProgress();
+
+  // Try to load from Sheets
+  const loaded = await loadFromSheets();
+  if (!loaded && !API_URL && !window._API_URL_OVERRIDE) {
+    // No API configured — run in demo mode
+    showApiBanner();
+  }
+
+  renderLabs();
+}
+
+init();
+</script>
+</body>
+</html>
