@@ -671,8 +671,15 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--fog);color:var(--ink
       <input class="finput" id="editLabName" placeholder="Ej: Lab. de Suelos y Aguas"></div>
     <div class="fg"><label class="fl">Código / Sigla</label>
       <input class="finput" id="editLabCode" disabled style="background:var(--fog);color:var(--gray);"></div>
-    <div class="fg"><label class="fl">Área / Sub-área</label>
-      <input class="finput" id="editLabArea" placeholder="Ej: Área de Análisis de Suelos"></div>
+    <div class="fg">
+      <label class="fl">Áreas del laboratorio</label>
+      <div id="editAreasList" style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;min-height:28px;"></div>
+      <div style="display:flex;gap:6px;">
+        <input class="finput" id="editAreaInput" placeholder="Ej: Área de Suelos" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addEditArea();}">
+        <button class="btn btn-blue" style="padding:6px 12px;white-space:nowrap;" onclick="addEditArea()">+ Agregar</button>
+      </div>
+      <small style="color:var(--gray);font-size:11px;">Estas áreas se usarán para clasificar los equipos al verificar</small>
+    </div>
     <div class="fg"><label class="fl">Responsable</label>
       <input class="finput" id="editLabResp" placeholder="Nombre del jefe de laboratorio"></div>
     <div class="fg"><label class="fl">Ícono (emoji)</label>
@@ -1082,10 +1089,42 @@ function openEditLab(){
   if(!lab) return;
   document.getElementById('editLabName').value=lab.name;
   document.getElementById('editLabCode').value=lab.id;
-  document.getElementById('editLabArea').value=lab.area==='—'?'':lab.area;
   document.getElementById('editLabResp').value=lab.responsible==='—'?'':lab.responsible;
   document.getElementById('editLabIcon').value=lab.icon||'🔬';
+  document.getElementById('editAreaInput').value='';
+  // Render existing areas as tags
+  renderEditAreas(lab.areas||[]);
   document.getElementById('mEditLab').classList.add('open');
+}
+
+function renderEditAreas(areas){
+  const container=document.getElementById('editAreasList');
+  if(!container) return;
+  container.innerHTML=areas.map((a,i)=>`
+    <span style="display:inline-flex;align-items:center;gap:4px;background:var(--green-lt);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:500;">
+      ${a}
+      <button onclick="removeEditArea(${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0;line-height:1;">×</button>
+    </span>`).join('');
+}
+
+function addEditArea(){
+  const input=document.getElementById('editAreaInput');
+  const val=input.value.trim();
+  if(!val) return;
+  const lab=S.labs.find(l=>l.id===S._pendingLabId);
+  if(!lab) return;
+  if(!lab.areas) lab.areas=[];
+  if(lab.areas.includes(val)){toast('Esa área ya existe','⚠️');return;}
+  lab.areas.push(val);
+  renderEditAreas(lab.areas);
+  input.value='';
+}
+
+function removeEditArea(idx){
+  const lab=S.labs.find(l=>l.id===S._pendingLabId);
+  if(!lab||!lab.areas) return;
+  lab.areas.splice(idx,1);
+  renderEditAreas(lab.areas);
 }
 
 function saveEditLab(){
@@ -1094,13 +1133,14 @@ function saveEditLab(){
   const name=document.getElementById('editLabName').value.trim();
   if(!name){toast('El nombre es obligatorio','⚠️');return;}
   lab.name=name;
-  lab.area=document.getElementById('editLabArea').value.trim()||'—';
   lab.responsible=document.getElementById('editLabResp').value.trim()||'—';
   lab.icon=document.getElementById('editLabIcon').value.trim()||'🔬';
+  // areas already updated live via addEditArea/removeEditArea
+  // area field (single) = first area or —
+  lab.area=(lab.areas&&lab.areas.length>0)?lab.areas[0]:'—';
   closeM('mEditLab');
-  // Actualizar el modal de detalle con los nuevos datos
   document.getElementById('mLDTitle').textContent=lab.icon+' '+lab.name;
-  document.getElementById('mLDDesc').textContent=`${lab.id} · ${lab.area} · Responsable: ${lab.responsible}`;
+  document.getElementById('mLDDesc').textContent=`${lab.id} · ${lab.areas&&lab.areas.length>0?lab.areas.join(', '):lab.area} · Responsable: ${lab.responsible}`;
   renderLabs();
   persistLab(lab);
   toast('Laboratorio actualizado ✔','✅');
@@ -1186,6 +1226,8 @@ function handleLabFile(file){
     if(isC7){
       // Col: A=0 N°, B=1 Nombre, C=2 Código, D=3 Operativo, E=4 Mantenimiento, F=5 Reparación, G=6 Baja, H=7 Fecha, I=8 Observaciones
       const equipos=[];
+      // Recopilar áreas detectadas automáticamente desde observaciones
+      const areasDetectadas=new Set();
       for(let i=8;i<data.length;i++){
         const row=data[i];
         if(!row||!row[2]) continue;
@@ -1201,11 +1243,23 @@ function handleLabFile(file){
         else if(f==='X') estado='EN REPARACIÓN';
         else if(e2==='X') estado='EN MANTENIMIENTO';
         else if(d==='X') estado='ÓPTIMO';
+        // Parsear observaciones: "Área de Suelos - Para baja" → area + obs limpia
+        const obsRaw=String(row[8]||'').trim();
+        let area='—', obs=obsRaw;
+        // Detectar patrón "Nombre de area - observacion" o "Nombre de area: observacion"
+        const areaMatch=obsRaw.match(/^([^\-:]+(?:área|area|ambiente|sala|secci[oó]n|zona|secci[oó]n)[^\-:]*?)\s*[-:]\s*(.*)$/i);
+        if(areaMatch){
+          area=areaMatch[1].trim();
+          obs=areaMatch[2].trim();
+          areasDetectadas.add(area);
+        } else {
+          // Verificar si la observación completa parece un área (sin guión)
+          const soloArea=obsRaw.match(/^(área|area|ambiente|sala|zona)\s+.{2,40}$/i);
+          if(soloArea){ area=obsRaw; obs=''; areasDetectadas.add(area); }
+        }
         equipos.push({
-          code:codigo, desc:nombre, brand:'—', area:'—',
-          status:estado,
-          obs:String(row[8]||'').trim(),
-          fechaMant:String(row[7]||'').trim(),
+          code:codigo, desc:nombre, brand:'—', area,
+          status:estado, obs, fechaMant:String(row[7]||'').trim(),
         });
       }
       if(equipos.length===0){toast('No se encontraron equipos en el archivo C7','⚠️');return;}
@@ -1213,6 +1267,10 @@ function handleLabFile(file){
       if(!lab) return;
       lab.db=equipos;
       lab.totalEquip=equipos.length;
+      // Agregar áreas detectadas al lab si no existen ya
+      if(!lab.areas) lab.areas=[];
+      areasDetectadas.forEach(a=>{ if(!lab.areas.includes(a)) lab.areas.push(a); });
+      if(areasDetectadas.size>0) toast('Áreas detectadas: '+[...areasDetectadas].join(', '),'📍');
       document.getElementById('mLDMapperSection').style.display='none';
       document.getElementById('mLDStartBtn').style.display='flex';
       const pEl=document.querySelector('#labUploadZone p');
