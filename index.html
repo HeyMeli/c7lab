@@ -815,21 +815,64 @@ async function openLabPage(labId){
   if(!lab) return;
   S.currentLabId=labId;
   S._pendingLabId=labId;
-  // Update header
+  // Update header immediately
   document.getElementById('ldTitle').textContent=(lab.icon||'🔬')+' '+lab.name;
   document.getElementById('ldSub').textContent=`${lab.id}${lab.facultad?' · '+lab.facultad:''}${lab.dpto?' · Dpto. '+lab.dpto:''} · Resp: ${lab.responsible||'—'}`;
-  // Load DB from sheets if not in memory
-  if(lab.db.length===0){
-    const lbl=document.getElementById('labUploadLabel');
-    if(lbl) lbl.textContent='⏳ Cargando lista de equipos…';
-    await loadLabDB(labId);
-    if(lbl) lbl.textContent=lab.db.length>0?`✅ ${lab.db.length} equipos cargados`:'Arrastra el Excel C7 de Patrimonio aquí';
-  } else {
-    const lbl=document.getElementById('labUploadLabel');
-    if(lbl) lbl.textContent=`✅ ${lab.db.length} equipos cargados`;
-  }
   goPage('labdetail');
+  // Always re-sync this lab's data from Sheets (inventory + tickets + db)
+  const lbl=document.getElementById('labUploadLabel');
+  if(lbl) lbl.textContent='⏳ Sincronizando con Sheets…';
+  setLoading(true);
+  try{
+    // 1. Reload inventory (confirmed) for this lab
+    const invRes=await api('getInventory',{labId});
+    if(invRes?.ok){
+      // Replace only this lab's confirmed entries
+      S.confirmed=S.confirmed.filter(c=>c.labId!==labId);
+      const fresh=invRes.data.map(r=>({
+        labId:r.labId,labName:r.labNombre,
+        code:r.codigo,desc:r.descripcion,
+        brand:r.marca,area:r.area,status:r.estado,
+        timestamp:r.timestamp,
+      }));
+      S.confirmed.push(...fresh);
+      lab.verified=fresh.length;
+    }
+    // 2. Reload tickets for this lab
+    const tktRes=await api('getTickets',{labId});
+    if(tktRes?.ok){
+      S.tickets=S.tickets.filter(t=>t.labId!==labId);
+      const fresh=tktRes.data.map(r=>({
+        id:r.id,labId:r.labId,labName:r.labNombre,
+        code:r.codigo,type:r.tipo,desc:r.descripcion,
+        action:r.accion,status:r.estado,
+        createdBy:r.creadoPor,createdAt:r.creadoEn,
+        resolvedBy:r.resueltoPor,resolvedAt:r.resueltoEn,
+        diffs:safeJson(r.diffs,[]),timeline:safeJson(r.timeline,[]),
+      }));
+      S.tickets.push(...fresh);
+      lab.openTickets=fresh.filter(t=>t.status==='open').length;
+      lab.pendingTickets=fresh.filter(t=>t.status==='pending').length;
+      lab.resolvedTickets=fresh.filter(t=>t.status==='resolved').length;
+    }
+    // 3. Load patrimonio db if not in memory
+    if(lab.db.length===0){
+      await loadLabDB(labId);
+    }
+    // 4. Reload lab row to get updated areas
+    const labsRes=await api('getLabs');
+    if(labsRes?.ok){
+      const row=labsRes.data.find(r=>r.id===labId);
+      if(row){
+        lab.areas=safeJson(row.areas,[]);
+        lab.totalEquip=Number(row.totalEquipos)||lab.db.length||0;
+      }
+    }
+  }catch(e){toast('Error al sincronizar: '+e.message,'⚠️');}
+  finally{setLoading(false);}
+  if(lbl) lbl.textContent=lab.db.length>0?`✅ ${lab.db.length} equipos cargados`:'Arrastra el Excel C7 de Patrimonio aquí';
   renderLabDetail();
+  updateNBadge();
 }
 
 function renderLabDetail(){
@@ -1805,7 +1848,7 @@ async function loadFromSheets(){
         facultad:r.facultad||'Agronomía',dpto:r.dpto||'—',
         responsible:r.responsable,icon:r.icono||'🔬',
         color:r.color||'#EEF4FF',
-        areas:r.areas?JSON.parse(r.areas||'[]'):[],
+        areas:safeJson(r.areas,[]),
         totalEquip:Number(r.totalEquipos)||0,
         verified:Number(r.verificados)||0,
         period:r.periodo||currentPeriod(),
