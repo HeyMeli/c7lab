@@ -622,8 +622,8 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--fog);color:var(--ink
     <p>El laboratorio quedará disponible para verificación y seguimiento.</p>
     <div class="fg"><label class="fl">Nombre del laboratorio *</label>
       <input class="finput" id="newLabName" placeholder="Ej: Lab. de Suelos y Aguas"></div>
-    <div class="fg"><label class="fl">Código / Sigla</label>
-      <input class="finput" id="newLabCode" placeholder="Ej: LAB-SA-01"></div>
+    <div class="fg"><label class="fl">Código / Sigla *</label>
+      <input class="finput" id="newLabCode" placeholder="Ej: LAB-SA-01" style="text-transform:uppercase;"></div>
     <div class="fg"><label class="fl">Área / Sub-área</label>
       <input class="finput" id="newLabArea" placeholder="Ej: Área de Análisis de Suelos"></div>
     <div class="fg"><label class="fl">Responsable</label>
@@ -655,6 +655,9 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--fog);color:var(--ink
     <div class="btn-row">
       <button class="btn btn-blue" id="mLDStartBtn" onclick="startLabVerification()" style="display:none">📷 Iniciar verificación</button>
       <button class="btn btn-ghost" onclick="closeM('mLabDetail')">Cerrar</button>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+      <button class="btn btn-danger" style="font-size:12px;padding:6px 14px;" onclick="confirmDeleteLab()">🗑 Eliminar laboratorio</button>
     </div>
   </div>
 </div>
@@ -1042,6 +1045,27 @@ function startLabVerification(){
   renderLabs();
 }
 
+function confirmDeleteLab(){
+  const lab=S.labs.find(l=>l.id===S._pendingLabId);
+  if(!lab) return;
+  const hasData = S.confirmed.filter(c=>c.labId===lab.id).length > 0;
+  const hasTkts = S.tickets.filter(t=>t.labId===lab.id).length > 0;
+  let msg = `¿Eliminar "${lab.name}" (${lab.id})?`;
+  if(hasData||hasTkts) msg += `\n\nEste lab tiene datos registrados (inventario/tickets). Se perderán.`;
+  if(confirm(msg)) deleteLab(lab.id);
+}
+
+function deleteLab(labId){
+  S.labs = S.labs.filter(l=>l.id!==labId);
+  S.confirmed = S.confirmed.filter(c=>c.labId!==labId);
+  S.tickets = S.tickets.filter(t=>t.labId!==labId);
+  if(S.currentLabId===labId) S.currentLabId=null;
+  closeM('mLabDetail');
+  renderLabs();
+  updateSelects();
+  toast('Laboratorio eliminado','🗑');
+}
+
 function openAddLabModal(){
   ['newLabName','newLabCode','newLabArea','newLabResp','newLabIcon'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mAddLab').classList.add('open');
@@ -1050,8 +1074,11 @@ function openAddLabModal(){
 function addLab(){
   const name=document.getElementById('newLabName').value.trim();
   if(!name){toast('El nombre es obligatorio','⚠️');return;}
+  const codeInput=document.getElementById('newLabCode').value.trim().toUpperCase();
+  if(!codeInput){toast('El código es obligatorio','⚠️');return;}
+  if(S.labs.find(l=>l.id===codeInput)){toast('Ya existe un laboratorio con ese código','⚠️');return;}
   const newLab={
-    id:'LAB-'+String(S.labs.length+1).padStart(3,'0'),
+    id: codeInput,
     name, area:document.getElementById('newLabArea').value||'—',
     responsible:document.getElementById('newLabResp').value||'—',
     icon:document.getElementById('newLabIcon').value||'🔬',
@@ -1065,7 +1092,7 @@ function addLab(){
   closeM('mAddLab');
   renderLabs();
   updateSelects();
-  toast('Laboratorio "'+name+'" agregado ✔','✅');
+  toast('Laboratorio "'+name+'" ('+codeInput+') agregado ✔','✅');
 }
 
 // ═══════════════════════════════════════════
