@@ -92,7 +92,7 @@ tr:hover td{background:var(--fog);}
 .scan-panel{background:#fff;border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:16px;}
 .cam-panel{border-radius:var(--r-sm);overflow:hidden;background:#000;margin-bottom:12px;display:none;position:relative;}
 .cam-panel.open{display:block;}
-.cam-panel video{width:100%;height:240px;display:block;object-fit:cover;object-position:center;}
+.cam-panel video{width:100%;max-height:300px;display:block;object-fit:cover;}
 .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
 .scan-frame{width:260px;height:80px;position:relative;}
 .scan-frame::before,.scan-frame::after{content:'';position:absolute;width:20px;height:20px;border-color:#fff;border-style:solid;}
@@ -103,7 +103,7 @@ tr:hover td{background:var(--fog);}
 .scan-frame .corner-br{right:0;border-width:0 3px 3px 0;}
 .scan-line{position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:scan-sweep 1.8s ease-in-out infinite;}
 @keyframes scan-sweep{0%{top:10px;opacity:1;}50%{opacity:.8;}100%{top:calc(100% - 10px);opacity:1;}}
-.cam-status{font-size:12px;color:rgba(255,255,255,.85);text-align:center;padding:7px;position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));}
+.cam-status{font-size:12px;color:rgba(255,255,255,.9);text-align:center;padding:7px;position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));}
 .scan-input-row{display:flex;gap:8px;margin-bottom:8px;}
 .scan-result{border-radius:var(--r-sm);padding:14px;margin-top:10px;display:none;}
 .scan-result.show{display:block;}
@@ -171,6 +171,41 @@ tr:hover td{background:var(--fog);}
 .diff-t td{padding:5px 8px;border-bottom:1px solid var(--border);}
 .d-old{color:var(--red);text-decoration:line-through;}
 .d-new{color:#15803D;}
+/* ── KANBAN ── */
+#kanbanBoard{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;}
+.kanban-col{background:var(--fog);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;}
+.kanban-col-head{padding:12px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:space-between;letter-spacing:.3px;flex-shrink:0;}
+.kanban-open{background:#FEE2E2;color:#991B1B;border-bottom:3px solid #F87171;}
+.kanban-pending{background:#FEF3C7;color:#92400E;border-bottom:3px solid #FCD34D;}
+.kanban-resolved{background:#DCFCE7;color:#14532D;border-bottom:3px solid #4ADE80;}
+.kanban-count{background:rgba(0,0,0,.15);border-radius:20px;padding:2px 9px;font-size:12px;font-weight:800;min-width:24px;text-align:center;}
+.kanban-cards{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:80px;max-height:calc(100vh - 280px);overflow-y:auto;}
+.kanban-cards::-webkit-scrollbar{width:4px;}
+.kanban-cards::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.k-card{background:#fff;border-radius:var(--r-sm);border:1px solid var(--border);padding:12px;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.07);border-left:3px solid transparent;}
+.k-card:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+.kcards-open .k-card,.kanban-col:nth-child(1) .k-card{border-left-color:#F87171;}
+.kcards-pending .k-card,.kanban-col:nth-child(2) .k-card{border-left-color:#FCD34D;}
+.kcards-resolved .k-card,.kanban-col:nth-child(3) .k-card{border-left-color:#4ADE80;}
+.k-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.k-card-id{font-family:monospace;font-size:11px;font-weight:700;color:var(--gray);}
+.k-card-code{font-size:14px;font-weight:700;margin-bottom:2px;line-height:1.2;}
+.k-card-lab{font-size:11px;color:var(--gray);margin-bottom:6px;display:flex;align-items:center;gap:4px;}
+.k-card-type{font-size:10px;padding:2px 7px;border-radius:8px;display:inline-block;margin-bottom:7px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.k-type-datos{background:#EDE9FE;color:#5B21B6;}
+.k-type-noreg{background:#DBEAFE;color:#1E40AF;}
+.k-type-noenc{background:#FEF3C7;color:#92400E;}
+.k-type-cod{background:#FFE4E6;color:#9F1239;}
+.k-type-est{background:#ECFDF5;color:#065F46;}
+.k-type-otro{background:var(--fog);color:var(--gray);}
+.k-card-desc{font-size:12px;color:var(--ink);line-height:1.45;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.k-card-date{font-size:10px;color:var(--gray);margin-bottom:8px;}
+.k-card-actions{display:flex;gap:6px;padding-top:8px;border-top:1px solid var(--border);}
+.k-empty{text-align:center;padding:32px 12px;color:var(--gray);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.k-empty-icon{font-size:28px;opacity:.4;}
+@media(max-width:900px){#kanbanBoard{grid-template-columns:repeat(3,minmax(220px,1fr));overflow-x:auto;padding-bottom:6px;}}
+@media(max-width:600px){#kanbanBoard{grid-template-columns:repeat(3,80vw);overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;}
+.kanban-col{scroll-snap-align:start;}.kanban-cards{max-height:60vh;}}
 /* ── MISC ── */
 .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:4px;}
 .page-sub{font-size:13px;color:var(--gray);margin-bottom:18px;}
@@ -222,15 +257,8 @@ tr:hover td{background:var(--fog);}
       <div class="page-title">🏫 Laboratorios</div>
       <div class="page-sub">Facultad de Agronomía — UNALM</div>
     </div>
-    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
-      <select class="fselect" id="periodSelect" style="width:auto;font-size:12px;padding:6px 10px;" onchange="S.period=this.value;renderLabs()">
-        <option value="Q1-2024">Q1-2024</option><option value="Q2-2024">Q2-2024</option>
-        <option value="Q3-2024">Q3-2024</option><option value="Q4-2024">Q4-2024</option>
-        <option value="Q1-2025">Q1-2025</option><option value="Q2-2025">Q2-2025</option>
-        <option value="Q3-2025">Q3-2025</option><option value="Q4-2025">Q4-2025</option>
-        <option value="Q1-2026">Q1-2026</option><option value="Q2-2026">Q2-2026</option>
-        <option value="Q3-2026">Q3-2026</option><option value="Q4-2026">Q4-2026</option>
-      </select>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-ghost" id="periodBtn" onclick="openPeriodModal()" style="font-size:12px;padding:6px 12px;">📅 <span id="periodBtnLabel">Período</span></button>
       <button class="btn btn-gold" onclick="openAddLabModal()">+ Nuevo laboratorio</button>
     </div>
   </div>
@@ -347,21 +375,32 @@ tr:hover td{background:var(--fog);}
 <!-- ══════════════════════════════
      PAGE: TICKETS
 ══════════════════════════════ -->
-<div class="page" id="page-tickets">
-  <div class="page-title">🎫 Tickets</div>
-  <div class="page-sub">Seguimiento de incidencias de inventario</div>
-  <div class="stats" id="tktStats"></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-    <input class="finput" id="tktSearch" placeholder="Buscar…" style="flex:1;min-width:140px;" oninput="renderTickets()">
-    <select class="fselect" id="tktLabFilter" style="width:auto;" onchange="renderTickets()"><option value="all">Todos los labs</option></select>
-    <select class="fselect" id="tktStatusFilter" style="width:auto;" onchange="renderTickets()">
-      <option value="all">Todos los estados</option>
-      <option value="open">Abiertos</option>
-      <option value="pending">En revisión</option>
-      <option value="resolved">Resueltos</option>
-    </select>
+<div class="page" id="page-tickets" style="max-width:1100px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+    <div>
+      <div class="page-title">&#x1F3AB; Tickets</div>
+      <div class="page-sub">Seguimiento de incidencias de inventario</div>
+    </div>
   </div>
-  <div id="tktList"></div>
+  <div class="stats" id="tktStats"></div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <input class="finput" id="tktSearch" placeholder="Buscar por c&#xF3;digo o lab&#x2026;" style="flex:1;min-width:140px;" oninput="renderTickets()">
+    <select class="fselect" id="tktLabFilter" style="width:auto;" onchange="renderTickets()"><option value="all">Todos los labs</option></select>
+  </div>
+  <div id="kanbanBoard" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;">
+    <div class="kanban-col">
+      <div class="kanban-col-head kanban-open">&#x1F534; Abiertos <span class="kanban-count" id="kcount-open">0</span></div>
+      <div class="kanban-cards" id="kcards-open"></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-col-head kanban-pending">&#x1F7E1; En revisi&#xF3;n <span class="kanban-count" id="kcount-pending">0</span></div>
+      <div class="kanban-cards" id="kcards-pending"></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-col-head kanban-resolved">&#x1F7E2; Resueltos <span class="kanban-count" id="kcount-resolved">0</span></div>
+      <div class="kanban-cards" id="kcards-resolved"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════
@@ -581,6 +620,36 @@ tr:hover td{background:var(--fog);}
   </div>
 </div>
 
+<!-- ══ MODAL: PERÍODO ══ -->
+<div class="modal-bg" id="mPeriod">
+  <div class="modal" style="max-width:380px;">
+    <h3>📅 Período de verificación</h3>
+    <p>Define cómo se llamará el período actual. Puedes usar el formato que prefieras.</p>
+    <div class="fg">
+      <label class="fl">Tipo de período</label>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;" id="periodTypeRow">
+        <button class="btn btn-ghost" style="font-size:12px;" onclick="setPeriodTemplate('semestre')">Semestral</button>
+        <button class="btn btn-ghost" style="font-size:12px;" onclick="setPeriodTemplate('trimestre')">Trimestral</button>
+        <button class="btn btn-ghost" style="font-size:12px;" onclick="setPeriodTemplate('anual')">Anual</button>
+        <button class="btn btn-ghost" style="font-size:12px;" onclick="setPeriodTemplate('libre')">Libre</button>
+      </div>
+    </div>
+    <div class="fg" id="periodPresets" style="display:none;">
+      <label class="fl">Opciones rápidas</label>
+      <div id="periodPresetList" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Nombre del período *</label>
+      <input class="finput" id="periodCustomInput" placeholder="Ej: Sem I - 2026">
+      <div style="font-size:11px;color:var(--gray);margin-top:4px;">Este nombre aparecerá en los reportes y exportaciones.</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="savePeriod()">✔ Aplicar período</button>
+      <button class="btn btn-ghost" onclick="closeM('mPeriod')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ TOAST ══ -->
 <div id="toast"><span id="tIcon"></span><span id="tMsg"></span></div>
 
@@ -628,8 +697,56 @@ function goPage(id){
 }
 
 function syncPeriodSelect(){
-  const sel=document.getElementById('periodSelect');
-  if(sel) sel.value=S.period;
+  const btn=document.getElementById('periodBtnLabel');
+  if(btn) btn.textContent=S.period;
+}
+
+function openPeriodModal(){
+  document.getElementById('periodCustomInput').value=S.period;
+  document.getElementById('periodPresets').style.display='none';
+  document.getElementById('mPeriod').classList.add('open');
+}
+
+function setPeriodTemplate(type){
+  const now=new Date();
+  const y=now.getFullYear();
+  const presets=[];
+  if(type==='semestre'){
+    for(let yr=y;yr<=y+1;yr++){
+      presets.push('Sem I - '+yr,'Sem II - '+yr);
+    }
+  } else if(type==='trimestre'){
+    for(let yr=y;yr<=y+1;yr++){
+      presets.push('T1-'+yr,'T2-'+yr,'T3-'+yr,'T4-'+yr);
+    }
+  } else if(type==='anual'){
+    for(let yr=y-1;yr<=y+2;yr++) presets.push(''+yr);
+  } else {
+    // Libre: solo limpiar y enfocar input
+    document.getElementById('periodPresets').style.display='none';
+    document.getElementById('periodCustomInput').value='';
+    document.getElementById('periodCustomInput').focus();
+    return;
+  }
+  const list=document.getElementById('periodPresetList');
+  list.innerHTML=presets.map(p=>`
+    <button class="btn btn-ghost" style="font-size:13px;text-align:left;justify-content:flex-start;${S.period===p?'background:var(--green-lt);border-color:var(--green);font-weight:700;':''}"
+      onclick="document.getElementById('periodCustomInput').value='${p}'">
+      ${S.period===p?'✓ ':''}${p}
+    </button>`).join('');
+  document.getElementById('periodPresets').style.display='block';
+  // Pre-fill input with first matching or current
+  if(presets.includes(S.period)) document.getElementById('periodCustomInput').value=S.period;
+}
+
+function savePeriod(){
+  const val=document.getElementById('periodCustomInput').value.trim();
+  if(!val){toast('Ingresa un nombre de período','⚠️');return;}
+  S.period=val;
+  syncPeriodSelect();
+  closeM('mPeriod');
+  renderLabs();
+  toast('Período actualizado: '+val,'📅');
 }
 
 // ═══════════════════════════════════════════
@@ -838,10 +955,9 @@ function goToTicket(){
   closeM('mTktDetail');
   goPage('tickets');
   updateSelects();
-  // Scroll/highlight ticket
   setTimeout(()=>{
     const el=document.getElementById('tkt-'+id);
-    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='2px solid var(--gold)';}
+    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='2px solid var(--gold)';setTimeout(()=>el.style.outline='',1800);}
   },300);
 }
 
@@ -1043,8 +1159,10 @@ function parseC7(data){
     equipos.push({code:codigo,desc:nombre,brand:'—',area,status:estado,obs,fechaMant:String(row[7]||'').trim()});
   }
   if(equipos.length===0){toast('No se encontraron equipos','⚠️');return;}
-  // Clear previous verifications for this lab when loading new Excel
+  // Reset all previous progress for this lab when loading new Excel
   S.confirmed=S.confirmed.filter(c=>c.labId!==lab.id);
+  S.tickets=S.tickets.filter(t=>t.labId!==lab.id);
+  lab.openTickets=0;lab.pendingTickets=0;lab.resolvedTickets=0;
   lab.db=equipos;
   lab.totalEquip=equipos.length;
   lab.verified=0;
@@ -1087,6 +1205,10 @@ function applyLabMapping(){
   const statusCol=document.getElementById('lmap_status')?.value;
   if(!codeCol||!descCol){toast('Código y Descripción son obligatorios','⚠️');return;}
   const lab=S.labs.find(l=>l.id===S._pendingLabId);
+  // Reset all previous progress
+  S.confirmed=S.confirmed.filter(c=>c.labId!==lab.id);
+  S.tickets=S.tickets.filter(t=>t.labId!==lab.id);
+  lab.openTickets=0;lab.pendingTickets=0;lab.resolvedTickets=0;lab.verified=0;
   lab.db=S.rawRows.filter(r=>r[codeCol]).map(r=>({
     code:String(r[codeCol]).trim().toUpperCase(),
     desc:r[descCol]||'',brand:'—',area:'—',
@@ -1117,44 +1239,44 @@ let camActive=false,camStream=null,zxingReader=null,nativeLoop=null,scanCooldown
 async function toggleCam(){
   if(camActive){stopCam();return;}
   const lab=S.labs.find(l=>l.id===S.currentLabId);
-  if(!lab||lab.db.length===0){toast('Carga el Excel primero','⚠️');return;}
+  if(!lab||lab.db.length===0){toast('Selecciona un laboratorio con lista cargada','⚠️');return;}
   const panel=document.getElementById('camPanel'),video=document.getElementById('camVideo'),status=document.getElementById('camStatus');
   panel.classList.add('open');camActive=true;status.textContent='Iniciando cámara…';
   document.getElementById('camBtn').textContent='✕';
   try{
-    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920,min:640},height:{ideal:1080,min:480},aspectRatio:{ideal:1.7778}}});
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
     video.srcObject=camStream;await video.play();
-    status.textContent='Apunta al código de barras';
+    status.textContent='Apunta al código de barras del equipo';
     if('BarcodeDetector' in window){
       const det=new BarcodeDetector({formats:['code_128','code_39','ean_13','ean_8','upc_a','itf','qr_code']});
-      const loop=async()=>{
-        if(!camActive) return;
-        if(!scanCooldown&&video.readyState===video.HAVE_ENOUGH_DATA){
-          try{const r=await det.detect(video);if(r.length>0)onCodeDetected(r[0].rawValue);}catch(_){}
-        }
-        nativeLoop=requestAnimationFrame(loop);
-      };
+      const loop=async()=>{if(!camActive)return;if(!scanCooldown&&video.readyState===video.HAVE_ENOUGH_DATA){try{const b=await det.detect(video);if(b.length>0)onCodeDetected(b[0].rawValue);}catch(e){}}nativeLoop=requestAnimationFrame(loop);};
       nativeLoop=requestAnimationFrame(loop);
     } else if(typeof ZXing!=='undefined'){
+      status.textContent='Modo compatibilidad — apunta al código…';
       zxingReader=new ZXing.BrowserBarcodeReader(300);
-      zxingReader.decodeFromStream(camStream,video,(result,err)=>{if(result&&!scanCooldown)onCodeDetected(result.text);});
-    } else {stopCam();toast('Ingresa el código manualmente','ℹ️');}
-  }catch(e){stopCam();toast(e.name==='NotAllowedError'?'Permiso de cámara denegado':'Error al iniciar cámara','❌');}
+      zxingReader.decodeFromStream(camStream,video,(result,err)=>{if(result&&!scanCooldown)onCodeDetected(result.getText());});
+    } else {
+      stopCam();toast('Ingresa el código manualmente','ℹ️');
+    }
+  }catch(e){
+    stopCam();
+    toast(e.name==='NotAllowedError'?'Permiso de cámara denegado — revisa ajustes del navegador':'Error de cámara: '+e.message,'❌');
+  }
 }
 function onCodeDetected(raw){
-  if(scanCooldown) return;
-  scanCooldown=true;
-  document.getElementById('camStatus').textContent='✅ Leído: '+raw.trim().toUpperCase();
-  document.getElementById('scanInput').value=raw.trim().toUpperCase();
+  if(scanCooldown)return;scanCooldown=true;
+  const code=raw.trim().toUpperCase();
+  document.getElementById('camStatus').textContent='✅ Leído: '+code;
   const panel=document.getElementById('camPanel');
   panel.style.outline='3px solid var(--green)';
   setTimeout(()=>panel.style.outline='',400);
+  document.getElementById('scanInput').value=code;
   setTimeout(()=>{stopCam();doScan();scanCooldown=false;},500);
 }
 function stopCam(){
   camActive=false;scanCooldown=false;
   if(nativeLoop){cancelAnimationFrame(nativeLoop);nativeLoop=null;}
-  if(zxingReader){try{zxingReader.reset();}catch(_){}zxingReader=null;}
+  if(zxingReader){try{zxingReader.reset();}catch(e){}zxingReader=null;}
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
   const v=document.getElementById('camVideo');if(v) v.srcObject=null;
   document.getElementById('camPanel').classList.remove('open');
@@ -1375,38 +1497,67 @@ function toggleTktBody(id){document.getElementById('tb-'+id)?.classList.toggle('
 function renderTickets(){
   const q=(document.getElementById('tktSearch')?.value||'').toLowerCase();
   const lf=document.getElementById('tktLabFilter')?.value||'all';
-  const sf=document.getElementById('tktStatusFilter')?.value||'all';
-  const open=S.tickets.filter(t=>t.status==='open').length;
-  const pend=S.tickets.filter(t=>t.status==='pending').length;
-  const res=S.tickets.filter(t=>t.status==='resolved').length;
+  const openCount=S.tickets.filter(t=>t.status==='open').length;
+  const pendCount=S.tickets.filter(t=>t.status==='pending').length;
+  const resCount=S.tickets.filter(t=>t.status==='resolved').length;
   document.getElementById('tktStats').innerHTML=`
-    <div class="sc r"><div class="sn">${open}</div><div class="sl">Abiertos</div></div>
-    <div class="sc a"><div class="sn">${pend}</div><div class="sl">En revisión</div></div>
-    <div class="sc g"><div class="sn">${res}</div><div class="sl">Resueltos</div></div>
+    <div class="sc r"><div class="sn">${openCount}</div><div class="sl">Abiertos</div></div>
+    <div class="sc a"><div class="sn">${pendCount}</div><div class="sl">En revisi\u00f3n</div></div>
+    <div class="sc g"><div class="sn">${resCount}</div><div class="sl">Resueltos</div></div>
     <div class="sc b"><div class="sn">${S.tickets.length}</div><div class="sl">Total</div></div>`;
   let tkts=S.tickets;
-  if(q) tkts=tkts.filter(t=>t.code.toLowerCase().includes(q)||(t.labName||'').toLowerCase().includes(q));
+  if(q) tkts=tkts.filter(t=>t.code.toLowerCase().includes(q)||(t.labName||'').toLowerCase().includes(q)||(t.id||'').toLowerCase().includes(q));
   if(lf!=='all') tkts=tkts.filter(t=>t.labId===lf);
-  if(sf!=='all') tkts=tkts.filter(t=>t.status===sf);
-  if(tkts.length===0){document.getElementById('tktList').innerHTML='<div class="empty"><div class="ei">🎫</div><div>No hay tickets</div></div>';return;}
-  const sLabel={open:'🔴 Abierto',pending:'🟡 En revisión',resolved:'🟢 Resuelto'};
-  const sBadge={open:'bg-red',pending:'bg-amb',resolved:'bg-ok'};
-  document.getElementById('tktList').innerHTML=tkts.map(t=>`
-    <div class="tkt-item" id="tkt-${t.id}">
-      <div class="tkt-head" onclick="toggleTktBody('${t.id}')">
-        <span class="badge ${sBadge[t.status]||'bg-gray'}">${sLabel[t.status]||t.status}</span>
-        <span style="font-family:monospace;font-size:13px;font-weight:700;">${t.id}</span>
-        <span style="font-size:12px;color:var(--gray);">${t.code}</span>
-        <span style="font-size:12px;">${t.labName||t.labId}</span>
-        <span style="margin-left:auto;font-size:12px;color:var(--gray);">${t.createdAt}</span>
-        ${t.status!=='resolved'?`<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;" onclick="event.stopPropagation();openResolveM('${t.id}')">Gestionar</button>`:''}
+  const typeClass={datos_incorrectos:'k-type-datos',no_registrado:'k-type-noreg',no_encontrado:'k-type-noenc',codigo_errado:'k-type-cod',estado_diferente:'k-type-est',otro:'k-type-otro'};
+  const typeLabel={datos_incorrectos:'Datos incorrectos',no_registrado:'No registrado',no_encontrado:'No encontrado',codigo_errado:'C\u00f3digo errado',estado_diferente:'Estado diferente',otro:'Otro'};
+  function buildCard(t){
+    const tc=typeClass[t.type]||'k-type-otro';
+    const tl=typeLabel[t.type]||t.type;
+    const actionBtn=t.status!=='resolved'
+      ?`<button class="btn btn-amber" style="font-size:11px;padding:5px 10px;flex:1;" onclick="openResolveM('${t.id}')">⚡ Gestionar</button>`
+      :`<span style="font-size:11px;color:#15803D;font-weight:600;display:flex;align-items:center;gap:4px;">✔ ${t.resolvedBy||'Patrimonio'}</span>`;
+    return `<div class="k-card" id="tkt-${t.id}">
+      <div class="k-card-header">
+        <span class="k-card-id">${t.id}</span>
+        <button class="btn btn-ghost" style="font-size:11px;padding:3px 7px;line-height:1;" onclick="showKanbanDetail('${t.id}')" title="Ver detalle">📋</button>
       </div>
-      <div class="tkt-body" id="tb-${t.id}">
-        <div style="font-size:13px;margin-bottom:8px;">${t.desc}</div>
-        ${t.diffs&&t.diffs.length>0?`<table class="diff-t"><thead><tr><th>Campo</th><th>Patrimonio</th><th>Físico</th></tr></thead><tbody>${t.diffs.map(d=>`<tr><td>${d.field}</td><td class="d-old">${d.old}</td><td class="d-new">${d.newV||d.nuevo||'—'}</td></tr>`).join('')}</tbody></table>`:''}
-        <div class="tkt-timeline">${(t.timeline||[]).map(tl=>`<div class="tl-item"><div class="tl-dot dot-${tl.type}"></div><div><strong>${tl.actor}</strong> · ${tl.time}<br>${tl.msg}</div></div>`).join('')}</div>
-      </div>
-    </div>`).join('');
+      <div class="k-card-code">${t.code}</div>
+      <div class="k-card-lab">🏫 ${t.labName||t.labId}</div>
+      <span class="k-card-type ${tc}">${tl}</span>
+      <div class="k-card-desc">${t.desc}</div>
+      <div class="k-card-date">📅 ${t.createdAt||''}${t.resolvedAt?' → '+t.resolvedAt:''}</div>
+      <div class="k-card-actions">${actionBtn}</div>
+    </div>`;
+  }
+  ['open','pending','resolved'].forEach(status=>{
+    const col=tkts.filter(t=>t.status===status);
+    document.getElementById('kcount-'+status).textContent=col.length;
+    const emptyMsg={open:'Sin incidencias abiertas',pending:'Nada en revisión',resolved:'Sin tickets resueltos'};
+    const emptyIcon={open:'🎉',pending:'⏳',resolved:'✅'};
+    document.getElementById('kcards-'+status).innerHTML=
+      col.length===0
+        ?`<div class="k-empty"><span class="k-empty-icon">${emptyIcon[status]}</span>${emptyMsg[status]}</div>`
+        :col.map(buildCard).join('');
+  });
+}
+
+function showKanbanDetail(id){
+  const t=S.tickets.find(t=>t.id===id);
+  if(!t) return;
+  S._tktDetailId=id;
+  document.getElementById('mTDTitle').textContent='&#x1F3AB; '+t.id;
+  const stLabel={open:'&#x1F534; Abierto',pending:'&#x1F7E1; En revisi\u00f3n',resolved:'&#x1F7E2; Resuelto'};
+  document.getElementById('mTDBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:12px;">
+      <div><label style="font-size:11px;color:var(--gray);">Estado</label><div>${stLabel[t.status]||t.status}</div></div>
+      <div><label style="font-size:11px;color:var(--gray);">C\u00f3digo</label><div style="font-family:monospace;">${t.code}</div></div>
+      <div><label style="font-size:11px;color:var(--gray);">Tipo</label><div>${t.type}</div></div>
+      <div><label style="font-size:11px;color:var(--gray);">Creado por</label><div>${t.createdBy}</div></div>
+    </div>
+    <div style="font-size:13px;margin-bottom:8px;"><label style="font-size:11px;color:var(--gray);">Descripci\u00f3n</label><div>${t.desc}</div></div>
+    <div class="tkt-timeline">${(t.timeline||[]).map(tl=>`<div class="tl-item"><div class="tl-dot dot-${tl.type}"></div><div><strong>${tl.actor}</strong> \u00b7 ${tl.time}<br>${tl.msg}</div></div>`).join('')}</div>
+    ${t.status!=='resolved'?`<div class="btn-row" style="margin-top:10px;"><button class="btn btn-ok" style="font-size:12px;padding:6px 12px;" onclick="closeM('mTktDetail');openResolveM('${t.id}')">&#x2714; Resolver</button></div>`:''}`;
+  document.getElementById('mTktDetail').classList.add('open');
 }
 
 // ═══════════════════════════════════════════
@@ -1773,7 +1924,9 @@ async function loadLabDB(labId){
 
 function currentPeriod(){
   const now=new Date();
-  return 'Q'+Math.ceil((now.getMonth()+1)/3)+'-'+now.getFullYear();
+  const y=now.getFullYear();
+  const sem=now.getMonth()<6?'I':'II';
+  return 'Sem '+sem+' - '+y;
 }
 
 function showApiBanner(){const el=document.getElementById('apiBanner');if(el)el.style.display='flex';}
@@ -1801,14 +1954,8 @@ function saveApiUrl(){
 // INIT
 // ═══════════════════════════════════════════
 async function init(){
-  // Set current period in selector
-  const sel=document.getElementById('periodSelect');
-  const cp=currentPeriod();
-  if(sel){
-    const opt=[...sel.options].find(o=>o.value===cp);
-    if(opt) sel.value=cp;
-    S.period=sel.value;
-  }
+  // Set current period label
+  syncPeriodSelect();
   updateSelects();
   const loaded=await loadFromSheets();
   if(!loaded&&!API_URL&&!window._API_URL_OVERRIDE) showApiBanner();
