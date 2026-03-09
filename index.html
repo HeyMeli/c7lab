@@ -1732,14 +1732,19 @@ function currentPeriod() {
 
 // ── UI: API setup banner ────────────────────────────────────
 function showApiBanner() {
-  document.getElementById('apiBanner').style.display='flex';
+function showApiBanner() {
+  const el = document.getElementById('apiBanner');
+  if(el) el.style.display='flex';
 }
 function hideApiSetup() {
-  document.getElementById('apiBanner').style.display='none';
-  document.getElementById('apiSetupPage').style.display='none';
+  const b = document.getElementById('apiBanner');
+  const s = document.getElementById('apiSetupPage');
+  if(b) b.style.display='none';
+  if(s) s.style.display='none';
 }
 function setLoading(on) {
-  document.getElementById('loadingOverlay').style.display=on?'flex':'none';
+  const el = document.getElementById('loadingOverlay');
+  if(el) el.style.display = on ? 'flex' : 'none';
 }
 function saveApiUrl() {
   const url=document.getElementById('apiUrlInput').value.trim();
@@ -1840,18 +1845,12 @@ addLab=async function(){
 async function init() {
   updateSelects();
   updateProgress();
-
-  // Try to load from Sheets
   const loaded = await loadFromSheets();
-  if (!loaded && !API_URL && !window._API_URL_OVERRIDE) {
-    // No API configured — run in demo mode
-    showApiBanner();
-  }
-
+  if (!loaded && !API_URL && !window._API_URL_OVERRIDE) showApiBanner();
   renderLabs();
 }
 
-init();
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
