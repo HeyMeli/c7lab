@@ -1125,8 +1125,11 @@ function handleLabFile(file){
     const ws=wb.Sheets[wb.SheetNames[0]];
     const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
 
-    // Detectar formato C7 SUNEDU: fila 8 (índice 7) tiene "Operativo" en col D
-    const isC7 = data[7] && String(data[7][3]||'').toLowerCase().includes('operativ');
+    // Detectar formato C7 SUNEDU buscando palabras clave en primeras 10 filas
+    const flatText = data.slice(0,10).flat().map(c=>String(c||'')).join(' ').toLowerCase();
+    const isC7 = flatText.includes('sunedu') || flatText.includes('anexo') ||
+                 flatText.includes('operativ') || flatText.includes('patrimonial') ||
+                 flatText.includes('licenciamiento');
 
     if(isC7){
       // Col: A=0 N°, B=1 Nombre, C=2 Código, D=3 Operativo, E=4 Mantenimiento, F=5 Reparación, G=6 Baja, H=7 Fecha, I=8 Observaciones
