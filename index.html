@@ -1241,9 +1241,17 @@ function applyLabMapping(){
 // ── Guardar DB de equipos del lab en Sheets ─────────────────
 async function persistLabDB(lab) {
   if(!lab||!lab.db||lab.db.length===0) return;
-  // Guardar cada equipo en pestaña 'patrimonio' y actualizar lab
-  await api('saveLabDB', { labId: lab.id, labName: lab.name, items: lab.db });
+  // Enviar en lotes de 20 para no superar límite de URL en JSONP
+  const BATCH = 20;
+  const items = lab.db;
+  toast('Guardando '+items.length+' equipos en Sheets…','⏳');
+  for(let i=0; i<items.length; i+=BATCH){
+    const batch = items.slice(i, i+BATCH);
+    const isFirst = i===0; // primera tanda reemplaza, las demás agregan
+    await api('saveLabDB', { labId: lab.id, labName: lab.name, items: batch, replace: isFirst });
+  }
   await persistLab(lab);
+  toast('✅ '+items.length+' equipos guardados en Sheets','📊');
 }
 
 // ── Cargar DB de equipos desde Sheets al abrir lab ───────────
