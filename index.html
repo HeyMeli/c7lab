@@ -1010,14 +1010,27 @@ function selectArea(labId, areaId){
   toast('Área: '+area.name,'📍');
 }
 
-function openLabDetail(labId){
+async function openLabDetail(labId){
   const lab=S.labs.find(l=>l.id===labId);
   if(!lab) return;
-  const open=S.tickets.filter(t=>t.labId===labId&&t.status==='open').length;
-  const pend=S.tickets.filter(t=>t.labId===labId&&t.status==='pending').length;
-  const res =S.tickets.filter(t=>t.labId===labId&&t.status==='resolved').length;
+  S._pendingLabId=labId;
   document.getElementById('mLDTitle').textContent=lab.icon+' '+lab.name;
   document.getElementById('mLDDesc').textContent=`${lab.id} · ${lab.area} · Responsable: ${lab.responsible}`;
+  document.getElementById('mLDMapperSection').style.display='none';
+  document.getElementById('mLabDetail').classList.add('open');
+
+  // Si no tiene DB en memoria, cargar desde Sheets
+  if(lab.db.length===0){
+    const pEl=document.querySelector('#labUploadZone p');
+    if(pEl) pEl.textContent='⏳ Cargando lista de equipos…';
+    await loadLabDB(labId);
+    if(pEl) pEl.textContent=lab.db.length>0
+      ? '✅ '+lab.db.length+' equipos cargados'
+      : 'Arrastra el Excel de Patrimonio aquí';
+  }
+
+  const open=S.tickets.filter(t=>t.labId===labId&&t.status==='open').length;
+  const pend=S.tickets.filter(t=>t.labId===labId&&t.status==='pending').length;
   document.getElementById('mLDStats').innerHTML=`
     <div class="stats" style="margin-bottom:0">
       <div class="sc b"><div class="sn">${lab.totalEquip}</div><div class="sl">Equipos</div></div>
@@ -1026,9 +1039,6 @@ function openLabDetail(labId){
       <div class="sc a"><div class="sn">${pend}</div><div class="sl">En revisión</div></div>
     </div>`;
   document.getElementById('mLDStartBtn').style.display=lab.db.length>0?'flex':'none';
-  document.getElementById('mLDMapperSection').style.display='none';
-  document.getElementById('mLabDetail').classList.add('open');
-  S._pendingLabId=labId;
 }
 
 function startLabVerification(){
@@ -1111,16 +1121,60 @@ function handleLabFile(file){
   const ext=file.name.split('.').pop().toLowerCase();
   const reader=new FileReader();
   reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+
+    // Detectar formato C7 SUNEDU: fila 8 (índice 7) tiene "Operativo" en col D
+    const isC7 = data[7] && String(data[7][3]||'').toLowerCase().includes('operativ');
+
+    if(isC7){
+      // Col: A=0 N°, B=1 Nombre, C=2 Código, D=3 Operativo, E=4 Mantenimiento, F=5 Reparación, G=6 Baja, H=7 Fecha, I=8 Observaciones
+      const equipos=[];
+      for(let i=8;i<data.length;i++){
+        const row=data[i];
+        if(!row||!row[2]) continue;
+        const codigo=String(row[2]).trim().toUpperCase();
+        if(!codigo) continue;
+        const nombre=String(row[1]||'').trim();
+        const d=String(row[3]||'').trim().toUpperCase();
+        const e2=String(row[4]||'').trim().toUpperCase();
+        const f=String(row[5]||'').trim().toUpperCase();
+        const g=String(row[6]||'').trim().toUpperCase();
+        let estado='ÓPTIMO';
+        if(g==='X') estado='DE BAJA';
+        else if(f==='X') estado='EN REPARACIÓN';
+        else if(e2==='X') estado='EN MANTENIMIENTO';
+        else if(d==='X') estado='ÓPTIMO';
+        equipos.push({
+          code:codigo, desc:nombre, brand:'—', area:'—',
+          status:estado,
+          obs:String(row[8]||'').trim(),
+          fechaMant:String(row[7]||'').trim(),
+        });
+      }
+      if(equipos.length===0){toast('No se encontraron equipos en el archivo C7','⚠️');return;}
+      const lab=S.labs.find(l=>l.id===S._pendingLabId);
+      if(!lab) return;
+      lab.db=equipos;
+      lab.totalEquip=equipos.length;
+      document.getElementById('mLDMapperSection').style.display='none';
+      document.getElementById('mLDStartBtn').style.display='flex';
+      const pEl=document.querySelector('#labUploadZone p');
+      if(pEl) pEl.textContent='✅ '+equipos.length+' equipos cargados';
+      toast(equipos.length+' equipos cargados desde C7 ✔','📂');
+      persistLabDB(lab);
+      return;
+    }
+
+    // Fallback formato genérico con mapper
     let rows,headers;
     if(ext==='csv'){
       const lines=e.target.result.trim().split('\n').map(l=>l.split(/[,;|\t]/));
       headers=lines[0].map(h=>h.trim().replace(/"/g,''));
       rows=lines.slice(1).map(r=>{const o={};headers.forEach((h,i)=>o[h]=(r[i]||'').trim().replace(/"/g,''));return o;});
     } else {
-      const wb=XLSX.read(e.target.result,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const data=XLSX.utils.sheet_to_json(ws,{header:1});
-      headers=data[0].map(h=>String(h||'').trim());
+      headers=(data[0]||[]).map(h=>String(h||'').trim());
       rows=data.slice(1).map(r=>{const o={};headers.forEach((h,i)=>o[h]=String(r[i]||'').trim());return o;}).filter(r=>Object.values(r).some(v=>v));
     }
     S.rawHeaders=headers;S.rawRows=rows;
@@ -1179,6 +1233,28 @@ function applyLabMapping(){
   document.getElementById('mLDMapperSection').style.display='none';
   document.getElementById('mLDStartBtn').style.display='flex';
   toast(`${lab.db.length} equipos cargados para ${lab.name}`,'📂');
+}
+
+// ── Guardar DB de equipos del lab en Sheets ─────────────────
+async function persistLabDB(lab) {
+  if(!lab||!lab.db||lab.db.length===0) return;
+  // Guardar cada equipo en pestaña 'patrimonio' y actualizar lab
+  await api('saveLabDB', { labId: lab.id, labName: lab.name, items: lab.db });
+  await persistLab(lab);
+}
+
+// ── Cargar DB de equipos desde Sheets al abrir lab ───────────
+async function loadLabDB(labId) {
+  const res = await api('getLabDB', { labId });
+  if(res?.ok && res.data?.length > 0) {
+    const lab = S.labs.find(l=>l.id===labId);
+    if(lab) {
+      lab.db = res.data;
+      lab.totalEquip = lab.db.length;
+    }
+    return true;
+  }
+  return false;
 }
 
 // ═══════════════════════════════════════════
