@@ -1360,6 +1360,7 @@ function resolveTicket(){
   const lab=S.labs.find(l=>l.id===t.labId);
   if(lab){lab.openTickets=S.tickets.filter(t2=>t2.labId===lab.id&&t2.status==='open').length;lab.resolvedTickets=S.tickets.filter(t2=>t2.labId===lab.id&&t2.status==='resolved').length;}
   closeM('mResolve');updateProgress();renderTickets();toast('Ticket '+t.id+' cerrado ✔','✅');
+  updateTicketInSheets(t);persistHistory(S.labs.find(l=>l.id===t.labId));
 }
 function pendTicket(){
   const t=S.tickets.find(t=>t.id===S.resolvingId);
@@ -1368,6 +1369,7 @@ function pendTicket(){
   const lab=S.labs.find(l=>l.id===t.labId);
   if(lab)lab.pendingTickets=S.tickets.filter(t2=>t2.labId===lab.id&&t2.status==='pending').length;
   closeM('mResolve');updateProgress();renderTickets();toast('Ticket en revisión ⏳','⏳');
+  updateTicketInSheets(t);
 }
 function toggleTktBody(id){document.getElementById('tb-'+id).classList.toggle('open');}
 
@@ -1731,7 +1733,6 @@ function currentPeriod() {
 }
 
 // ── UI: API setup banner ────────────────────────────────────
-function showApiBanner() {
 function showApiBanner() {
   const el = document.getElementById('apiBanner');
   if(el) el.style.display='flex';
