@@ -1064,6 +1064,9 @@ function deleteLab(labId){
   renderLabs();
   updateSelects();
   toast('Laboratorio eliminado','🗑');
+  // Sincronizar con Sheets
+  api('deleteLab', { id: labId });
+  api('deleteByLab', { labId });
 }
 
 function openAddLabModal(){
