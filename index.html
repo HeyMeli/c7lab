@@ -1077,6 +1077,7 @@ function deleteLab(labId){
   // Sincronizar con Sheets
   api('deleteLab', { id: labId });
   api('deleteByLab', { labId });
+  api('deleteLabDB', { labId });
 }
 
 function openAddLabModal(){
