@@ -656,8 +656,30 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--fog);color:var(--ink
       <button class="btn btn-blue" id="mLDStartBtn" onclick="startLabVerification()" style="display:none">📷 Iniciar verificación</button>
       <button class="btn btn-ghost" onclick="closeM('mLabDetail')">Cerrar</button>
     </div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <button class="btn btn-amber" style="font-size:12px;padding:6px 14px;" onclick="openEditLab()">✏️ Editar info</button>
       <button class="btn btn-danger" style="font-size:12px;padding:6px 14px;" onclick="confirmDeleteLab()">🗑 Eliminar laboratorio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: EDIT LAB ══ -->
+<div class="modal-bg" id="mEditLab">
+  <div class="modal">
+    <h3>✏️ Editar Laboratorio</h3>
+    <div class="fg"><label class="fl">Nombre del laboratorio *</label>
+      <input class="finput" id="editLabName" placeholder="Ej: Lab. de Suelos y Aguas"></div>
+    <div class="fg"><label class="fl">Código / Sigla</label>
+      <input class="finput" id="editLabCode" disabled style="background:var(--fog);color:var(--gray);"></div>
+    <div class="fg"><label class="fl">Área / Sub-área</label>
+      <input class="finput" id="editLabArea" placeholder="Ej: Área de Análisis de Suelos"></div>
+    <div class="fg"><label class="fl">Responsable</label>
+      <input class="finput" id="editLabResp" placeholder="Nombre del jefe de laboratorio"></div>
+    <div class="fg"><label class="fl">Ícono (emoji)</label>
+      <input class="finput" id="editLabIcon" placeholder="🔬" maxlength="4" style="font-size:20px;"></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-ok" onclick="saveEditLab()">✔ Guardar cambios</button>
+      <button class="btn btn-ghost" onclick="closeM('mEditLab')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1053,6 +1075,35 @@ function startLabVerification(){
   updateProgress();
   toast('Verificando: '+lab.name,'📷');
   renderLabs();
+}
+
+function openEditLab(){
+  const lab=S.labs.find(l=>l.id===S._pendingLabId);
+  if(!lab) return;
+  document.getElementById('editLabName').value=lab.name;
+  document.getElementById('editLabCode').value=lab.id;
+  document.getElementById('editLabArea').value=lab.area==='—'?'':lab.area;
+  document.getElementById('editLabResp').value=lab.responsible==='—'?'':lab.responsible;
+  document.getElementById('editLabIcon').value=lab.icon||'🔬';
+  document.getElementById('mEditLab').classList.add('open');
+}
+
+function saveEditLab(){
+  const lab=S.labs.find(l=>l.id===S._pendingLabId);
+  if(!lab) return;
+  const name=document.getElementById('editLabName').value.trim();
+  if(!name){toast('El nombre es obligatorio','⚠️');return;}
+  lab.name=name;
+  lab.area=document.getElementById('editLabArea').value.trim()||'—';
+  lab.responsible=document.getElementById('editLabResp').value.trim()||'—';
+  lab.icon=document.getElementById('editLabIcon').value.trim()||'🔬';
+  closeM('mEditLab');
+  // Actualizar el modal de detalle con los nuevos datos
+  document.getElementById('mLDTitle').textContent=lab.icon+' '+lab.name;
+  document.getElementById('mLDDesc').textContent=`${lab.id} · ${lab.area} · Responsable: ${lab.responsible}`;
+  renderLabs();
+  persistLab(lab);
+  toast('Laboratorio actualizado ✔','✅');
 }
 
 function confirmDeleteLab(){
