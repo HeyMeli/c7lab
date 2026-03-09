@@ -1638,7 +1638,7 @@ async function loadFromSheets() {
     // Init sheets structure
     await api('init');
 
-    // Load labs
+    // Load labs — si el Sheet tiene datos reemplaza los demo completamente
     const labsRes = await api('getLabs');
     if (labsRes?.ok && labsRes.data.length > 0) {
       S.labs = labsRes.data.map(r => ({
@@ -1648,10 +1648,14 @@ async function loadFromSheets() {
         totalEquip: Number(r.totalEquipos) || 0,
         verified: Number(r.verificados) || 0,
         period: r.periodo || 'Q4-2025',
+        subAreas: [],
         db: [], confirmed: [],
         openTickets:0, pendingTickets:0, resolvedTickets:0,
         history: [],
       }));
+    } else {
+      // Sheet vacío → limpiar demos y arrancar en blanco
+      S.labs = [];
     }
 
     // Load tickets
