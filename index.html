@@ -279,6 +279,7 @@ tr:hover td{background:var(--fog);}
     <div class="lab-actions">
       <button class="btn btn-amber" onclick="openEditLab()">✏️ Editar</button>
       <button class="btn btn-blue" id="ldScanBtn" onclick="openScanView()" disabled>📷 Verificar</button>
+      <button class="btn btn-ghost" id="ldSyncBtn" style="font-size:12px;" title="Sincronizar con Sheets" onclick="syncLabFromSheets()">🔄</button>
       <button class="btn btn-danger" style="font-size:12px;" onclick="confirmDeleteLab()">🗑</button>
     </div>
   </div>
@@ -875,6 +876,50 @@ async function openLabPage(labId){
   if(lbl) lbl.textContent=lab.db.length>0?`✅ ${lab.db.length} equipos cargados`:'Arrastra el Excel C7 de Patrimonio aquí';
   renderLabDetail();
   updateNBadge();
+}
+
+async function syncLabFromSheets(){
+  const labId=S.currentLabId;
+  if(!labId) return;
+  const lab=S.labs.find(l=>l.id===labId);
+  if(!lab) return;
+  const btn=document.getElementById('ldSyncBtn');
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  toast('Sincronizando…','🔄');
+  try{
+    const invRes=await api('getInventory',{labId});
+    if(invRes?.ok){
+      S.confirmed=S.confirmed.filter(c=>c.labId!==labId);
+      S.confirmed.push(...invRes.data.map(r=>({
+        labId:r.labId,labName:r.labNombre,
+        code:String(r.codigo),desc:r.descripcion,
+        brand:r.marca,area:r.area,status:r.estado,
+        timestamp:r.timestamp,
+      })));
+      lab.verified=S.confirmed.filter(c=>c.labId===labId).length;
+    }
+    const tktRes=await api('getTickets',{labId});
+    if(tktRes?.ok){
+      S.tickets=S.tickets.filter(t=>t.labId!==labId);
+      const fresh=tktRes.data.map(r=>({
+        id:r.id,labId:r.labId,labName:r.labNombre,
+        code:String(r.codigo),type:r.tipo,desc:r.descripcion,
+        action:r.accion,status:r.estado,
+        createdBy:r.creadoPor,createdAt:r.creadoEn,
+        resolvedBy:r.resueltoPor,resolvedAt:r.resueltoEn,
+        diffs:safeJson(r.diffs,[]),timeline:safeJson(r.timeline,[]),
+      }));
+      S.tickets.push(...fresh);
+      lab.openTickets=fresh.filter(t=>t.status==='open').length;
+      lab.pendingTickets=fresh.filter(t=>t.status==='pending').length;
+      lab.resolvedTickets=fresh.filter(t=>t.status==='resolved').length;
+    }
+    renderLabDetail();
+    renderLabTable();
+    updateC7Progress();
+    toast('✅ Verificación actualizada','🔄');
+  }catch(e){toast('Error: '+e.message,'⚠️');}
+  finally{if(btn){btn.textContent='🔄';btn.disabled=false;}}
 }
 
 function renderLabDetail(){
@@ -1828,7 +1873,7 @@ async function api(action,data={}){ return apiCall(action,data); }
 async function apiCall(action,data={}){
   const base=window._API_URL_OVERRIDE||API_URL;
   if(!base) return null;
-  const params=new URLSearchParams({action,data:JSON.stringify(data)});
+  const params=new URLSearchParams({action,data:JSON.stringify(data),_t:Date.now()});
   const url=`${base}?${params.toString()}`;
   return new Promise((resolve)=>{
     const cbName='_cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
