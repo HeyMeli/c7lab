@@ -627,7 +627,10 @@ tr:hover td{background:var(--fog);}
 <div class="modal-bg" id="mPeriod">
   <div class="modal" style="max-width:380px;">
     <h3>📅 Período de verificación</h3>
-    <p>Define cómo se llamará el período actual. Puedes usar el formato que prefieras.</p>
+    <p>Define el período activo. Al cambiar, se cargarán desde Sheets solo las verificaciones y tickets de ese período.</p>
+    <div id="mPeriodCurrent" style="background:var(--green-lt);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+      <span>📌 Período activo:</span><strong id="mPeriodCurrentVal">—</strong>
+    </div>
     <div class="fg">
       <label class="fl">Tipo de período</label>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;" id="periodTypeRow">
@@ -706,6 +709,8 @@ function syncPeriodSelect(){
 
 function openPeriodModal(){
   document.getElementById('periodCustomInput').value=S.period;
+  const cv=document.getElementById('mPeriodCurrentVal');
+  if(cv) cv.textContent=S.period||currentPeriod();
   document.getElementById('periodPresets').style.display='none';
   document.getElementById('mPeriod').classList.add('open');
 }
@@ -742,14 +747,59 @@ function setPeriodTemplate(type){
   if(presets.includes(S.period)) document.getElementById('periodCustomInput').value=S.period;
 }
 
-function savePeriod(){
+async function savePeriod(){
   const val=document.getElementById('periodCustomInput').value.trim();
   if(!val){toast('Ingresa un nombre de período','⚠️');return;}
+  const changed=val!==S.period;
   S.period=val;
   syncPeriodSelect();
   closeM('mPeriod');
+  if(changed){
+    toast('Cargando datos de '+val+'…','📅');
+    // Reload inventory and tickets for new period from Sheets
+    setLoading(true);
+    try{
+      const res=await api('getAll',{periodo:val});
+      if(res?.ok){
+        // Replace confirmed with only this period's data
+        if(res.inventory){
+          S.confirmed=res.inventory.map(r=>({
+            labId:String(r.labId),labName:r.labNombre,
+            code:String(r.codigo),desc:r.descripcion,
+            brand:r.marca,area:r.area,status:r.estado,
+            timestamp:r.timestamp,periodo:r.periodo||'',
+          }));
+        }
+        // Replace tickets (all periods — tickets don't expire)
+        if(res.tickets){
+          S.tickets=res.tickets.map(r=>({
+            id:r.id,labId:String(r.labId),labName:r.labNombre,
+            code:String(r.codigo),type:r.tipo,desc:r.descripcion,
+            action:r.accion,status:r.estado,
+            createdBy:r.creadoPor,createdAt:r.creadoEn,
+            resolvedBy:r.resueltoPor,resolvedAt:r.resueltoEn,
+            diffs:safeJson(r.diffs,[]),timeline:safeJson(r.timeline,[]),
+          }));
+          S.tktCounter=S.tickets.length>0?Math.max(...S.tickets.map(t=>parseInt(t.id.replace('TKT-',''))||0))+1:1;
+        }
+        // Recalculate lab counters
+        S.labs.forEach(lab=>{
+          lab.openTickets=S.tickets.filter(t=>t.labId===lab.id&&t.status==='open').length;
+          lab.pendingTickets=S.tickets.filter(t=>t.labId===lab.id&&t.status==='pending').length;
+          lab.resolvedTickets=S.tickets.filter(t=>t.labId===lab.id&&t.status==='resolved').length;
+          lab.verified=S.confirmed.filter(c=>c.labId===lab.id).length;
+          // Clear in-memory db so lab re-fetches patrimonio on next open
+          lab.db=[];
+        });
+        toast('✅ Período '+val+' — '+S.confirmed.length+' verificaciones cargadas','📅');
+      }
+    }catch(e){toast('Error al cambiar período: '+e.message,'⚠️');}
+    finally{setLoading(false);}
+  } else {
+    toast('Período: '+val,'📅');
+  }
   renderLabs();
-  toast('Período actualizado: '+val,'📅');
+  updateNBadge();
 }
 
 // ═══════════════════════════════════════════
@@ -2042,6 +2092,7 @@ async function loadLabDB(labId){
 }
 
 function currentPeriod(){
+  if(typeof S!=='undefined'&&S.period) return S.period;
   const now=new Date();
   const y=now.getFullYear();
   const sem=now.getMonth()<6?'I':'II';
