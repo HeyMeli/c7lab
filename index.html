@@ -864,7 +864,9 @@ async function openLabPage(labId){
     if(labsRes?.ok){
       const row=labsRes.data.find(r=>r.id===labId);
       if(row){
-        lab.areas=safeJson(row.areas,[]);
+        // Replace areas completely from Sheets (don't accumulate)
+        const freshAreas=safeJson(row.areas,[]);
+        lab.areas=freshAreas;
         lab.totalEquip=Number(row.totalEquipos)||lab.db.length||0;
       }
     }
@@ -1210,8 +1212,8 @@ function parseC7(data){
   lab.db=equipos;
   lab.totalEquip=equipos.length;
   lab.verified=0;
-  if(!lab.areas) lab.areas=[];
-  areasDetectadas.forEach(a=>{if(!lab.areas.includes(a)) lab.areas.push(a);});
+  // Replace areas from fresh parse (don't accumulate old ones)
+  lab.areas=[...areasDetectadas];
   const lbl=document.getElementById('labUploadLabel');
   if(lbl) lbl.textContent='✅ '+equipos.length+' equipos cargados';
   toast(equipos.length+' equipos cargados desde C7 ✔','📂');
@@ -1424,8 +1426,12 @@ function confirmScan(){
   toast('Equipo '+s.code+' confirmado ✔','✅');
   persistItem(item);
   persistLab(lab);
-  // Refresh lab detail table if visible (user may navigate back)
+  // Refresh lab detail table immediately if visible
   lab._tableNeedsRefresh=true;
+  if(document.getElementById('page-labdetail').classList.contains('on')){
+    renderLabTable();
+    renderLabDetail();
+  }
   updateC7Progress();
 }
 
