@@ -827,51 +827,37 @@ async function openLabPage(labId){
   if(lbl) lbl.textContent='⏳ Sincronizando con Sheets…';
   setLoading(true);
   try{
-    // 1. Reload inventory (confirmed) for this lab
-    const invRes=await api('getInventory',{labId});
-    if(invRes?.ok){
-      // Replace only this lab's confirmed entries
+    // Parallel: getLabData (inventory+tickets) + loadLabDB if needed
+    const [labDataRes] = await Promise.all([
+      api('getLabData',{labId}),
+      lab.db.length===0 ? loadLabDB(labId) : Promise.resolve(true),
+    ]);
+
+    if(labDataRes?.ok){
+      // Update inventory
       S.confirmed=S.confirmed.filter(c=>c.labId!==labId);
-      const fresh=invRes.data.map(r=>({
-        labId:r.labId,labName:r.labNombre,
+      const freshInv=(labDataRes.inventory||[]).map(r=>({
+        labId:String(r.labId),labName:r.labNombre,
         code:String(r.codigo),desc:r.descripcion,
         brand:r.marca,area:r.area,status:r.estado,
         timestamp:r.timestamp,periodo:r.periodo||'',
       }));
-      S.confirmed.push(...fresh);
-      lab.verified=fresh.length;
-    }
-    // 2. Reload tickets for this lab
-    const tktRes=await api('getTickets',{labId});
-    if(tktRes?.ok){
+      S.confirmed.push(...freshInv);
+      lab.verified=freshInv.length;
+      // Update tickets
       S.tickets=S.tickets.filter(t=>t.labId!==labId);
-      const fresh=tktRes.data.map(r=>({
-        id:r.id,labId:r.labId,labName:r.labNombre,
-        code:r.codigo,type:r.tipo,desc:r.descripcion,
+      const freshTkts=(labDataRes.tickets||[]).map(r=>({
+        id:r.id,labId:String(r.labId),labName:r.labNombre,
+        code:String(r.codigo),type:r.tipo,desc:r.descripcion,
         action:r.accion,status:r.estado,
         createdBy:r.creadoPor,createdAt:r.creadoEn,
         resolvedBy:r.resueltoPor,resolvedAt:r.resueltoEn,
         diffs:safeJson(r.diffs,[]),timeline:safeJson(r.timeline,[]),
       }));
-      S.tickets.push(...fresh);
-      lab.openTickets=fresh.filter(t=>t.status==='open').length;
-      lab.pendingTickets=fresh.filter(t=>t.status==='pending').length;
-      lab.resolvedTickets=fresh.filter(t=>t.status==='resolved').length;
-    }
-    // 3. Load patrimonio db if not in memory
-    if(lab.db.length===0){
-      await loadLabDB(labId);
-    }
-    // 4. Reload lab row to get updated areas
-    const labsRes=await api('getLabs');
-    if(labsRes?.ok){
-      const row=labsRes.data.find(r=>r.id===labId);
-      if(row){
-        // Replace areas completely from Sheets (don't accumulate)
-        const freshAreas=safeJson(row.areas,[]);
-        lab.areas=freshAreas;
-        lab.totalEquip=Number(row.totalEquipos)||lab.db.length||0;
-      }
+      S.tickets.push(...freshTkts);
+      lab.openTickets=freshTkts.filter(t=>t.status==='open').length;
+      lab.pendingTickets=freshTkts.filter(t=>t.status==='pending').length;
+      lab.resolvedTickets=freshTkts.filter(t=>t.status==='resolved').length;
     }
   }catch(e){toast('Error al sincronizar: '+e.message,'⚠️');}
   finally{setLoading(false);}
@@ -898,22 +884,20 @@ async function syncLabFromSheets(){
   if(btn){btn.textContent='⏳';btn.disabled=true;}
   toast('Sincronizando…','🔄');
   try{
-    const invRes=await api('getInventory',{labId});
-    if(invRes?.ok){
+    // Single call: inventory + tickets together
+    const res=await api('getLabData',{labId});
+    if(res?.ok){
       S.confirmed=S.confirmed.filter(c=>c.labId!==labId);
-      S.confirmed.push(...invRes.data.map(r=>({
-        labId:r.labId,labName:r.labNombre,
+      S.confirmed.push(...(res.inventory||[]).map(r=>({
+        labId:String(r.labId),labName:r.labNombre,
         code:String(r.codigo),desc:r.descripcion,
         brand:r.marca,area:r.area,status:r.estado,
         timestamp:r.timestamp,periodo:r.periodo||'',
       })));
       lab.verified=S.confirmed.filter(c=>c.labId===labId).length;
-    }
-    const tktRes=await api('getTickets',{labId});
-    if(tktRes?.ok){
       S.tickets=S.tickets.filter(t=>t.labId!==labId);
-      const fresh=tktRes.data.map(r=>({
-        id:r.id,labId:r.labId,labName:r.labNombre,
+      const fresh=(res.tickets||[]).map(r=>({
+        id:r.id,labId:String(r.labId),labName:r.labNombre,
         code:String(r.codigo),type:r.tipo,desc:r.descripcion,
         action:r.accion,status:r.estado,
         createdBy:r.creadoPor,createdAt:r.creadoEn,
@@ -1916,14 +1900,18 @@ async function loadFromSheets(){
   if(!API_URL&&!window._API_URL_OVERRIDE){showApiBanner();return false;}
   setLoading(true);
   try{
-    await api('init');
-    const labsRes=await api('getLabs');
-    if(labsRes?.ok&&labsRes.data.length>0){
-      S.labs=labsRes.data.map(r=>{
-        // Preserve existing db in memory so patrimonio list survives refresh
+    // Init sheets structure (fast, no data read)
+    api('init'); // fire-and-forget, don't await
+    // Single call returns labs + tickets + inventory
+    const res=await api('getAll',{periodo:currentPeriod()});
+    if(!res?.ok) throw new Error('No se pudo conectar con Sheets');
+
+    // Parse labs
+    if(res.labs&&res.labs.length>0){
+      S.labs=res.labs.map(r=>{
         const existing=S.labs.find(l=>l.id===r.id);
         return {
-          id:r.id,name:r.nombre,area:r.area||'—',
+          id:String(r.id),name:r.nombre,area:r.area||'—',
           facultad:r.facultad||'Agronomía',dpto:r.dpto||'—',
           responsible:r.responsable,icon:r.icono||'🔬',
           color:r.color||'#EEF4FF',
@@ -1931,17 +1919,18 @@ async function loadFromSheets(){
           totalEquip:Number(r.totalEquipos)||0,
           verified:Number(r.verificados)||0,
           period:r.periodo||currentPeriod(),
-          subAreas:[],db:existing?.db||[],confirmed:[],
+          subAreas:[],db:existing?.db||[],
           openTickets:0,pendingTickets:0,resolvedTickets:0,history:[],
           lastSync:existing?.lastSync||null,
         };
       });
     } else { S.labs=[]; }
-    const tktRes=await api('getTickets');
-    if(tktRes?.ok){
-      S.tickets=tktRes.data.map(r=>({
-        id:r.id,labId:r.labId,labName:r.labNombre,
-        code:r.codigo,type:r.tipo,desc:r.descripcion,
+
+    // Parse tickets
+    if(res.tickets){
+      S.tickets=res.tickets.map(r=>({
+        id:r.id,labId:String(r.labId),labName:r.labNombre,
+        code:String(r.codigo),type:r.tipo,desc:r.descripcion,
         action:r.accion,status:r.estado,
         createdBy:r.creadoPor,createdAt:r.creadoEn,
         resolvedBy:r.resueltoPor,resolvedAt:r.resueltoEn,
@@ -1949,15 +1938,18 @@ async function loadFromSheets(){
       }));
       S.tktCounter=S.tickets.length>0?Math.max(...S.tickets.map(t=>parseInt(t.id.replace('TKT-',''))||0))+1:1;
     }
-    const invRes=await api('getInventory');
-    if(invRes?.ok){
-      S.confirmed=invRes.data.map(r=>({
-        labId:r.labId,labName:r.labNombre,
+
+    // Parse inventory
+    if(res.inventory){
+      S.confirmed=res.inventory.map(r=>({
+        labId:String(r.labId),labName:r.labNombre,
         code:String(r.codigo),desc:r.descripcion,
         brand:r.marca,area:r.area,status:r.estado,
         timestamp:r.timestamp,periodo:r.periodo||'',
       }));
     }
+
+    // Update lab counters from loaded data
     S.labs.forEach(lab=>{
       lab.openTickets=S.tickets.filter(t=>t.labId===lab.id&&t.status==='open').length;
       lab.pendingTickets=S.tickets.filter(t=>t.labId===lab.id&&t.status==='pending').length;
@@ -1965,7 +1957,7 @@ async function loadFromSheets(){
       lab.verified=S.confirmed.filter(c=>c.labId===lab.id).length;
     });
     hideApiBanner();
-    toast('✅ Datos sincronizados con Google Sheets','📊');
+    toast('✅ Datos cargados','📊');
     return true;
   }catch(e){toast('Error al cargar: '+e.message,'❌');return false;}
   finally{setLoading(false);}
