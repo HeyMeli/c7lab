@@ -676,7 +676,7 @@ const S = {
   currentTktCode: null,
   resolvingId: null,
   tktCounter: 1,
-  period: currentPeriod(),
+  period: calcDefaultPeriod(),
   _pendingLabId: null,
   _tktDetailId: null,
 };
@@ -2091,12 +2091,15 @@ async function loadLabDB(labId){
   return false;
 }
 
-function currentPeriod(){
-  if(typeof S!=='undefined'&&S.period) return S.period;
+function calcDefaultPeriod(){
   const now=new Date();
   const y=now.getFullYear();
   const sem=now.getMonth()<6?'I':'II';
   return 'Sem '+sem+' - '+y;
+}
+function currentPeriod(){
+  try{ if(typeof S!=='undefined'&&S&&S.period) return S.period; }catch(_){}
+  return calcDefaultPeriod();
 }
 
 function showApiBanner(){const el=document.getElementById('apiBanner');if(el)el.style.display='flex';}
