@@ -82,6 +82,7 @@ tr:last-child td{border-bottom:none;}
 tr:hover td{background:var(--fog);}
 .verif-badge{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:600;cursor:pointer;border:none;white-space:nowrap;}
 .v-ok{background:#DCFCE7;color:#15803D;}
+.v-stale{background:#FEF9C3;color:#854D0E;border:1px solid #FDE047;}
 .v-tkt{background:var(--red-lt);color:var(--red);}
 .v-pend{background:var(--fog);color:var(--gray);}
 /* ── UPLOAD ZONE ── */
@@ -280,6 +281,7 @@ tr:hover td{background:var(--fog);}
       <button class="btn btn-amber" onclick="openEditLab()">✏️ Editar</button>
       <button class="btn btn-blue" id="ldScanBtn" onclick="openScanView()" disabled>📷 Verificar</button>
       <button class="btn btn-ghost" id="ldSyncBtn" style="font-size:12px;" title="Sincronizar con Sheets" onclick="syncLabFromSheets()">🔄</button>
+      <span id="ldSyncTime" style="font-size:10px;color:var(--gray);white-space:nowrap;"></span>
       <button class="btn btn-danger" style="font-size:12px;" onclick="confirmDeleteLab()">🗑</button>
     </div>
   </div>
@@ -832,9 +834,9 @@ async function openLabPage(labId){
       S.confirmed=S.confirmed.filter(c=>c.labId!==labId);
       const fresh=invRes.data.map(r=>({
         labId:r.labId,labName:r.labNombre,
-        code:r.codigo,desc:r.descripcion,
+        code:String(r.codigo),desc:r.descripcion,
         brand:r.marca,area:r.area,status:r.estado,
-        timestamp:r.timestamp,
+        timestamp:r.timestamp,periodo:r.periodo||'',
       }));
       S.confirmed.push(...fresh);
       lab.verified=fresh.length;
@@ -883,6 +885,15 @@ async function syncLabFromSheets(){
   if(!labId) return;
   const lab=S.labs.find(l=>l.id===labId);
   if(!lab) return;
+  // Check if any item is still being saved to Sheets
+  const stillSaving=S.confirmed.some(c=>c.labId===labId&&c._saving);
+  if(stillSaving){
+    toast('Guardando datos en Sheets, espera…','⏳');
+    await new Promise(r=>setTimeout(r,4000));
+  } else {
+    // Small delay anyway to allow any in-flight JSONP calls to complete
+    await new Promise(r=>setTimeout(r,800));
+  }
   const btn=document.getElementById('ldSyncBtn');
   if(btn){btn.textContent='⏳';btn.disabled=true;}
   toast('Sincronizando…','🔄');
@@ -894,7 +905,7 @@ async function syncLabFromSheets(){
         labId:r.labId,labName:r.labNombre,
         code:String(r.codigo),desc:r.descripcion,
         brand:r.marca,area:r.area,status:r.estado,
-        timestamp:r.timestamp,
+        timestamp:r.timestamp,periodo:r.periodo||'',
       })));
       lab.verified=S.confirmed.filter(c=>c.labId===labId).length;
     }
@@ -914,11 +925,15 @@ async function syncLabFromSheets(){
       lab.pendingTickets=fresh.filter(t=>t.status==='pending').length;
       lab.resolvedTickets=fresh.filter(t=>t.status==='resolved').length;
     }
+    lab.lastSync=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    // Update sync time display
+    const syncLbl=document.getElementById('ldSyncTime');
+    if(syncLbl) syncLbl.textContent='Última sync: '+lab.lastSync;
     renderLabDetail();
     renderLabTable();
     updateC7Progress();
-    toast('✅ Verificación actualizada','🔄');
-  }catch(e){toast('Error: '+e.message,'⚠️');}
+    toast('✅ Verificación actualizada · '+S.confirmed.filter(c=>c.labId===labId).length+' verificados','🔄');
+  }catch(e){toast('Error al sincronizar: '+e.message,'⚠️');}
   finally{if(btn){btn.textContent='🔄';btn.disabled=false;}}
 }
 
@@ -985,8 +1000,16 @@ function renderLabTable(){
     const vs=getVerifStatus(labId,e.code);
     const tkt=S.tickets.find(t=>t.labId===labId&&t.code===e.code&&t.status!=='resolved');
     let vBadge;
-    if(vs==='conforme') vBadge=`<span class="verif-badge v-ok">✔ Conforme</span>`;
-    else if(vs==='con_ticket') vBadge=`<button class="verif-badge v-tkt" onclick="openTktDetail('${tkt?.id||''}')">🎫 Con ticket</button>`;
+      const conf=S.confirmed.find(c=>c.labId===labId&&c.code===e.code);
+    const confPeriod=conf?.periodo||conf?.period||'';
+    const curPer=currentPeriod();
+    const staleVerif=conf&&confPeriod&&confPeriod!==curPer;
+    if(vs==='conforme'){
+      const ts=conf?.timestamp||'';
+      vBadge=staleVerif
+        ?`<span class="verif-badge v-stale" title="Verificado en ${confPeriod} — reverificar">⚠️ Rev. anterior</span>`
+        :`<span class="verif-badge v-ok" title="Verificado: ${ts}">✔ Conforme</span>`;
+    } else if(vs==='con_ticket') vBadge=`<button class="verif-badge v-tkt" onclick="openTktDetail('${tkt?.id||''}')">🎫 Con ticket</button>`;
     else vBadge=`<span class="verif-badge v-pend">⏳ Pendiente</span>`;
     return `<tr>
       <td style="color:var(--gray);font-size:11px;">${i+1}</td>
@@ -1469,7 +1492,9 @@ function confirmScan(){
   // Update scan sub
   document.getElementById('scanLabSub').textContent=lab.id+' · '+lab.verified+' verificados de '+lab.totalEquip;
   toast('Equipo '+s.code+' confirmado ✔','✅');
-  persistItem(item);
+  // Mark as pending-save so sync knows data may not be in Sheets yet
+  item._saving=true;
+  persistItem(item).then(()=>{item._saving=false;}).catch(()=>{item._saving=false;});
   persistLab(lab);
   // Refresh lab detail table immediately if visible
   lab._tableNeedsRefresh=true;
@@ -1894,18 +1919,23 @@ async function loadFromSheets(){
     await api('init');
     const labsRes=await api('getLabs');
     if(labsRes?.ok&&labsRes.data.length>0){
-      S.labs=labsRes.data.map(r=>({
-        id:r.id,name:r.nombre,area:r.area||'—',
-        facultad:r.facultad||'Agronomía',dpto:r.dpto||'—',
-        responsible:r.responsable,icon:r.icono||'🔬',
-        color:r.color||'#EEF4FF',
-        areas:safeJson(r.areas,[]),
-        totalEquip:Number(r.totalEquipos)||0,
-        verified:Number(r.verificados)||0,
-        period:r.periodo||currentPeriod(),
-        subAreas:[],db:[],confirmed:[],
-        openTickets:0,pendingTickets:0,resolvedTickets:0,history:[],
-      }));
+      S.labs=labsRes.data.map(r=>{
+        // Preserve existing db in memory so patrimonio list survives refresh
+        const existing=S.labs.find(l=>l.id===r.id);
+        return {
+          id:r.id,name:r.nombre,area:r.area||'—',
+          facultad:r.facultad||'Agronomía',dpto:r.dpto||'—',
+          responsible:r.responsable,icon:r.icono||'🔬',
+          color:r.color||'#EEF4FF',
+          areas:safeJson(r.areas,[]),
+          totalEquip:Number(r.totalEquipos)||0,
+          verified:Number(r.verificados)||0,
+          period:r.periodo||currentPeriod(),
+          subAreas:[],db:existing?.db||[],confirmed:[],
+          openTickets:0,pendingTickets:0,resolvedTickets:0,history:[],
+          lastSync:existing?.lastSync||null,
+        };
+      });
     } else { S.labs=[]; }
     const tktRes=await api('getTickets');
     if(tktRes?.ok){
@@ -1923,9 +1953,9 @@ async function loadFromSheets(){
     if(invRes?.ok){
       S.confirmed=invRes.data.map(r=>({
         labId:r.labId,labName:r.labNombre,
-        code:r.codigo,desc:r.descripcion,
+        code:String(r.codigo),desc:r.descripcion,
         brand:r.marca,area:r.area,status:r.estado,
-        timestamp:r.timestamp,
+        timestamp:r.timestamp,periodo:r.periodo||'',
       }));
     }
     S.labs.forEach(lab=>{
@@ -1956,12 +1986,13 @@ async function persistLab(lab){
 }
 
 async function persistItem(item){
+  item.periodo=item.periodo||currentPeriod();
   await api('saveItem',{
     id:item.labId+'-'+item.code,
     labId:item.labId,labNombre:item.labName,
     codigo:item.code,descripcion:item.desc,
     marca:item.brand,area:item.area,estado:item.status,
-    timestamp:item.timestamp,periodo:currentPeriod(),
+    timestamp:item.timestamp,periodo:item.periodo,
   });
 }
 
